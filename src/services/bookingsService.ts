@@ -2,19 +2,16 @@ import fetchApi, { ApiResponse } from './apiClient';
 import { Booking } from '@/data/mockData';
 
 export interface BookingInput {
-  equipment_id: number;
-  customer_id: number;
-  start_date: string;
-  end_date: string;
-  booking_type: 'hourly' | 'daily';
-  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  totalCost: number;
-}
-
-export interface BookingResponse extends Booking {
-  equipmentName: string;
+  equipmentId: number;
+  customerId?: number;
   customerName: string;
-  customerEmail: string;
+  customerPhone: string;
+  customerEmail?: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  totalPrice: number;
+  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
 }
 
 // Create booking
@@ -34,70 +31,60 @@ export async function getBookings(filters?: {
   endDate?: string;
 }): Promise<Booking[]> {
   let query = 'bookings.php?action=read';
-  
-  if (filters?.status) {
-    query += `&status=${filters.status}`;
-  }
-  if (filters?.customerId) {
-    query += `&customer_id=${filters.customerId}`;
-  }
-  if (filters?.equipmentId) {
-    query += `&equipment_id=${filters.equipmentId}`;
-  }
-  if (filters?.startDate) {
-    query += `&start_date=${filters.startDate}`;
-  }
-  if (filters?.endDate) {
-    query += `&end_date=${filters.endDate}`;
-  }
-  
-  const response = await fetchApi<BookingResponse[]>(query);
-  
+  if (filters?.status) query += `&status=${filters.status}`;
+  if (filters?.customerId) query += `&customer_id=${filters.customerId}`;
+  if (filters?.equipmentId) query += `&equipment_id=${filters.equipmentId}`;
+  if (filters?.startDate) query += `&start_date=${filters.startDate}`;
+  if (filters?.endDate) query += `&end_date=${filters.endDate}`;
+
+  const response = await fetchApi<any[]>(query);
+
   if (response.status === 'success' && response.data) {
-    return response.data.map(booking => ({
-      id: booking.id.toString(),
-      equipmentId: booking.equipment_id?.toString() || booking.equipmentId,
-      equipmentName: booking.equipmentName || booking.equipment,
-      customerId: booking.customer_id?.toString() || booking.customerId,
-      customerName: booking.customerName || booking.customer,
-      customerEmail: booking.customerEmail || booking.email,
-      categoryName: booking.categoryName || booking.category,
-      startDate: booking.startDate || booking.start_date,
-      endDate: booking.endDate || booking.end_date,
-      status: booking.status as any,
-      totalDays: booking.totalDays !== undefined ? Number(booking.totalDays) : 0,
-      totalPrice: booking.totalPrice !== undefined ? Number(booking.totalPrice) : 0,
-      createdAt: booking.createdAt || booking.created_at || '',
-      notes: booking.notes,
+    return response.data.map(b => ({
+      id: (b.id || '').toString(),
+      equipmentId: (b.equipmentId || b.equipment_id || '').toString(),
+      equipmentName: b.equipmentName || b.equipment_name || '',
+      categoryName: b.categoryName || b.category_name || '',
+      customerName: b.customerName || b.customer_name || '',
+      customerPhone: b.customerPhone || b.customer_phone || '',
+      customerEmail: b.customerEmail || b.customer_email || '',
+      startDate: b.startDate || b.start_date || '',
+      endDate: b.endDate || b.end_date || '',
+      totalDays: Number(b.totalDays || b.total_days || 0),
+      totalPrice: Number(b.totalPrice || b.total_price || b.totalCost || b.total_cost || 0),
+      status: b.status || 'pending',
+      createdAt: b.createdAt || b.created_at || '',
+      notes: b.notes || '',
     }));
   }
-  
+
   return [];
 }
 
 // Get single booking
 export async function getBookingById(id: string): Promise<Booking | null> {
-  const response = await fetchApi<BookingResponse>(`bookings.php?action=read_one&id=${id}`);
-  
+  const response = await fetchApi<any>(`bookings.php?action=read_one&id=${id}`);
+
   if (response.status === 'success' && response.data) {
-    const booking = response.data;
+    const b = response.data;
     return {
-      id: booking.id.toString(),
-      equipmentId: booking.equipment_id?.toString() || booking.equipmentId,
-      equipmentName: booking.equipmentName || booking.equipment,
-      customerId: booking.customer_id?.toString() || booking.customerId,
-      customerName: booking.customerName || booking.customer,
-      customerEmail: booking.customerEmail || booking.email,
-      startDate: new Date(booking.start_date || booking.startDate),
-      endDate: new Date(booking.end_date || booking.endDate),
-      bookingType: booking.booking_type || booking.type,
-      status: booking.status as any,
-      totalCost: booking.totalCost || booking.total_cost,
-      createdAt: booking.createdAt || new Date(),
-      notes: booking.notes,
+      id: (b.id || '').toString(),
+      equipmentId: (b.equipmentId || b.equipment_id || '').toString(),
+      equipmentName: b.equipmentName || b.equipment_name || '',
+      categoryName: b.categoryName || b.category_name || '',
+      customerName: b.customerName || b.customer_name || '',
+      customerPhone: b.customerPhone || b.customer_phone || '',
+      customerEmail: b.customerEmail || b.customer_email || '',
+      startDate: b.startDate || b.start_date || '',
+      endDate: b.endDate || b.end_date || '',
+      totalDays: Number(b.totalDays || b.total_days || 0),
+      totalPrice: Number(b.totalPrice || b.total_price || b.totalCost || b.total_cost || 0),
+      status: b.status || 'pending',
+      createdAt: b.createdAt || b.created_at || '',
+      notes: b.notes || '',
     };
   }
-  
+
   return null;
 }
 

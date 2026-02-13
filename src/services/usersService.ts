@@ -7,7 +7,8 @@ export interface User {
   phone?: string;
   address?: string;
   role: 'admin' | 'customer';
-  createdAt?: Date;
+  status?: string;
+  createdAt?: string;
 }
 
 export interface LoginRequest {
@@ -22,6 +23,7 @@ export interface LoginResponse {
   phone?: string;
   address?: string;
   role: 'admin' | 'customer';
+  status?: string;
   token?: string;
 }
 

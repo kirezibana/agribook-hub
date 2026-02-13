@@ -17,7 +17,7 @@ export interface Equipment {
   pricePerDay: number;
   description: string;
   image: string;
-  status: "available" | "booked" | "maintenance";
+  status: "available" | "maintenance" | "unavailable";
   createdAt: string;
 }
 
@@ -28,12 +28,14 @@ export interface Booking {
   categoryName: string;
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   startDate: string;
   endDate: string;
   totalDays: number;
   totalPrice: number;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   createdAt: string;
+  notes?: string;
 }
 
 export const mockCategories: Category[] = [
@@ -46,7 +48,7 @@ export const mockCategories: Category[] = [
 
 export const mockEquipment: Equipment[] = [
   { id: "1", name: "John Deere 5075E", modelNumber: "JD-5075E", categoryId: "1", categoryName: "Tractors", pricePerDay: 150, description: "75 HP utility tractor perfect for medium farms", image: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=400", status: "available", createdAt: "2024-01-15" },
-  { id: "2", name: "Kubota M7-172", modelNumber: "KM7-172", categoryId: "1", categoryName: "Tractors", pricePerDay: 200, description: "172 HP premium tractor with advanced features", image: "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=400", status: "booked", createdAt: "2024-01-20" },
+  { id: "2", name: "Kubota M7-172", modelNumber: "KM7-172", categoryId: "1", categoryName: "Tractors", pricePerDay: 200, description: "172 HP premium tractor with advanced features", image: "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=400", status: "unavailable", createdAt: "2024-01-20" },
   { id: "3", name: "Case IH Axial-Flow", modelNumber: "CI-AF8250", categoryId: "2", categoryName: "Harvesters", pricePerDay: 350, description: "High-capacity combine harvester", image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400", status: "available", createdAt: "2024-02-01" },
   { id: "4", name: "Great Plains 3S-4000", modelNumber: "GP-3S4000", categoryId: "3", categoryName: "Seeders", pricePerDay: 120, description: "40-foot grain drill for efficient seeding", image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400", status: "available", createdAt: "2024-02-10" },
   { id: "5", name: "Valley Center Pivot", modelNumber: "VC-8000", categoryId: "4", categoryName: "Irrigation", pricePerDay: 80, description: "Center pivot irrigation system", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400", status: "maintenance", createdAt: "2024-02-15" },

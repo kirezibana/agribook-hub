@@ -54,14 +54,12 @@ export default function EquipmentPage() {
   const [formData, setFormData] = useState({
     name: "",
     category_id: "",
-    hourly_rate: "",
     daily_rate: "",
     description: "",
     status: "available" as Equipment["status"],
   });
   const { toast } = useToast();
 
-  // Load equipment and categories on mount
   useEffect(() => {
     fetchData();
   }, []);
@@ -70,12 +68,10 @@ export default function EquipmentPage() {
     try {
       setLoading(true);
       setError(null);
-      
       const [equipmentData, categoriesData] = await Promise.all([
         getEquipment(),
         getCategories(),
       ]);
-      
       setEquipment(equipmentData);
       setCategories(categoriesData);
     } catch (err) {
@@ -88,14 +84,7 @@ export default function EquipmentPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      category_id: "",
-      hourly_rate: "",
-      daily_rate: "",
-      description: "",
-      status: "available",
-    });
+    setFormData({ name: "", category_id: "", daily_rate: "", description: "", status: "available" });
   };
 
   const handleAdd = async () => {
@@ -103,25 +92,21 @@ export default function EquipmentPage() {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
-
     try {
       setSaveLoading(true);
       await createEquipment({
         name: formData.name,
         category_id: parseInt(formData.category_id),
-        hourly_rate: parseFloat(formData.hourly_rate || "0"),
         daily_rate: parseFloat(formData.daily_rate),
         description: formData.description,
         status: formData.status,
       });
-
       resetForm();
       setIsAddOpen(false);
       await fetchData();
       toast({ title: "Success", description: "Equipment added successfully" });
     } catch (err) {
       toast({ title: "Error", description: "Failed to add equipment", variant: "destructive" });
-      console.error(err);
     } finally {
       setSaveLoading(false);
     }
@@ -129,25 +114,21 @@ export default function EquipmentPage() {
 
   const handleEdit = async () => {
     if (!editingEquipment) return;
-
     try {
       setSaveLoading(true);
       await updateEquipment(editingEquipment.id, {
         name: formData.name,
         category_id: parseInt(formData.category_id),
-        hourly_rate: parseFloat(formData.hourly_rate || "0"),
         daily_rate: parseFloat(formData.daily_rate),
         description: formData.description,
         status: formData.status,
       });
-
       setEditingEquipment(null);
       resetForm();
       await fetchData();
       toast({ title: "Success", description: "Equipment updated successfully" });
     } catch (err) {
       toast({ title: "Error", description: "Failed to update equipment", variant: "destructive" });
-      console.error(err);
     } finally {
       setSaveLoading(false);
     }
@@ -160,7 +141,6 @@ export default function EquipmentPage() {
       toast({ title: "Deleted", description: "Equipment removed successfully" });
     } catch (err) {
       toast({ title: "Error", description: "Failed to delete equipment", variant: "destructive" });
-      console.error(err);
     }
   };
 
@@ -169,8 +149,7 @@ export default function EquipmentPage() {
     setFormData({
       name: eq.name,
       category_id: eq.categoryId,
-      hourly_rate: eq.hourlyRate?.toString() || "0",
-      daily_rate: eq.dailyRate?.toString() || "0",
+      daily_rate: eq.pricePerDay?.toString() || "0",
       description: eq.description,
       status: eq.status,
     });
@@ -187,8 +166,8 @@ export default function EquipmentPage() {
     switch (status) {
       case "available":
         return <Badge className="bg-success/10 text-success border-0">Available</Badge>;
-      case "booked":
-        return <Badge className="bg-warning/10 text-warning border-0">Booked</Badge>;
+      case "unavailable":
+        return <Badge className="bg-warning/10 text-warning border-0">Unavailable</Badge>;
       case "maintenance":
         return <Badge className="bg-destructive/10 text-destructive border-0">Maintenance</Badge>;
     }
@@ -198,19 +177,12 @@ export default function EquipmentPage() {
     <div className="grid grid-cols-2 gap-4 py-4">
       <div className="space-y-2">
         <Label>Equipment Name *</Label>
-        <Input
-          placeholder="Enter equipment name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          onKeyDown={(e) => e.stopPropagation()}
-        />
+        <Input placeholder="Enter equipment name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
       </div>
       <div className="space-y-2">
         <Label>Category *</Label>
         <Select value={formData.category_id} onValueChange={(val) => setFormData({ ...formData, category_id: val })}>
-          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
+          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}><SelectValue placeholder="Select category" /></SelectTrigger>
           <SelectContent>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
@@ -219,31 +191,13 @@ export default function EquipmentPage() {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Hourly Rate ($)</Label>
-        <Input
-          type="number"
-          placeholder="Enter hourly rate"
-          value={formData.hourly_rate}
-          onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
-          onKeyDown={(e) => e.stopPropagation()}
-        />
-      </div>
-      <div className="space-y-2">
         <Label>Daily Rate ($) *</Label>
-        <Input
-          type="number"
-          placeholder="Enter daily rate"
-          value={formData.daily_rate}
-          onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
-          onKeyDown={(e) => e.stopPropagation()}
-        />
+        <Input type="number" placeholder="Enter daily rate" value={formData.daily_rate} onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
       </div>
       <div className="space-y-2">
         <Label>Status</Label>
         <Select value={formData.status} onValueChange={(val: Equipment["status"]) => setFormData({ ...formData, status: val })}>
-          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}>
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="available">Available</SelectItem>
             <SelectItem value="maintenance">Maintenance</SelectItem>
@@ -253,12 +207,7 @@ export default function EquipmentPage() {
       </div>
       <div className="col-span-2 space-y-2">
         <Label>Description</Label>
-        <Textarea
-          placeholder="Enter description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          onKeyDown={(e) => e.stopPropagation()}
-        />
+        <Textarea placeholder="Enter description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
       </div>
     </div>
   );
@@ -287,9 +236,7 @@ export default function EquipmentPage() {
             <div className="flex items-center gap-3 text-destructive">
               <AlertCircle className="w-5 h-5" />
               <p>{error}</p>
-              <Button variant="outline" onClick={fetchData} size="sm" className="ml-auto">
-                Retry
-              </Button>
+              <Button variant="outline" onClick={fetchData} size="sm" className="ml-auto">Retry</Button>
             </div>
           </CardContent>
         </Card>
@@ -308,17 +255,10 @@ export default function EquipmentPage() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search equipment..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-48"
-              />
+              <Input placeholder="Search equipment..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 w-48" />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((cat) => (
@@ -327,9 +267,7 @@ export default function EquipmentPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+              <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
@@ -337,20 +275,11 @@ export default function EquipmentPage() {
                 <SelectItem value="unavailable">Unavailable</SelectItem>
               </SelectContent>
             </Select>
-            {/* Add Equipment Modal (separated into its own component) */}
             <AddEquipmentModal
               open={isAddOpen}
-              onOpenChange={(o) => {
-                if (!o) resetForm();
-                setIsAddOpen(o);
-              }}
+              onOpenChange={(o) => { if (!o) resetForm(); setIsAddOpen(o); }}
               categories={categories}
-              onCreated={async () => {
-                resetForm();
-                await fetchData();
-                // refresh list after creation (toast is shown by modal)
-                await Promise.resolve();
-              }}
+              onCreated={async () => { resetForm(); await fetchData(); }}
             />
           </div>
         </CardHeader>
@@ -359,41 +288,27 @@ export default function EquipmentPage() {
             {filteredEquipment.map((eq) => (
               <Card key={eq.id} className="overflow-hidden hover:shadow-xl transition-shadow">
                 <div className="aspect-video relative overflow-hidden bg-muted">
-                  <img
-                    src={eq.image}
-                    alt={eq.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (!target.src.includes('placehold.co')) {
-                        target.src = 'https://placehold.co/400x300?text=Image+Not+Found';
-                      }
-                    }}
-                  />
-                  <div className="absolute top-3 right-3">
-                    {getStatusBadge(eq.status)}
-                  </div>
+                  <img src={eq.image} alt={eq.name} className="w-full h-full object-cover" onError={(e) => { const target = e.target as HTMLImageElement; if (!target.src.includes('placehold.co')) target.src = 'https://placehold.co/400x300?text=Image+Not+Found'; }} />
+                  <div className="absolute top-3 right-3">{getStatusBadge(eq.status)}</div>
                 </div>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-lg">{eq.name}</h3>
-                      <p className="text-sm text-muted-foreground">{eq.category}</p>
+                      <p className="text-sm text-muted-foreground">{eq.categoryName}</p>
                     </div>
-                    <Badge variant="outline">{eq.category}</Badge>
+                    <Badge variant="outline">{eq.categoryName}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{eq.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-primary font-bold text-lg">
                       <DollarSign className="w-5 h-5" />
-                      {eq.dailyRate}/day
+                      {eq.pricePerDay}/day
                     </div>
                     <div className="flex gap-1">
                       <Dialog open={editingEquipment?.id === eq.id} onOpenChange={(open) => !open && setEditingEquipment(null)}>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(eq)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(eq)}><Pencil className="w-4 h-4" /></Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
@@ -403,31 +318,22 @@ export default function EquipmentPage() {
                           <EquipmentForm isEdit />
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setEditingEquipment(null)}>Cancel</Button>
-                            <Button onClick={handleEdit} className="gradient-primary" disabled={saveLoading}>
-                              {saveLoading ? "Saving..." : "Save Changes"}
-                            </Button>
+                            <Button onClick={handleEdit} className="gradient-primary" disabled={saveLoading}>{saveLoading ? "Saving..." : "Save Changes"}</Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-                      
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Equipment</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{eq.name}"?
-                            </AlertDialogDescription>
+                            <AlertDialogDescription>Are you sure you want to delete "{eq.name}"?</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(eq.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Delete
-                            </AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDelete(eq.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -437,7 +343,6 @@ export default function EquipmentPage() {
               </Card>
             ))}
           </div>
-          
           {filteredEquipment.length === 0 && (
             <div className="text-center py-12">
               <Wrench className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
