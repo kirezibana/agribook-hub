@@ -1,13 +1,18 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { loginUser } from "@/services/usersService";
 
 export interface User {
-  username: string;
+  id?: string;
+  username?: string;
+  email?: string;
   name: string;
+  role?: string;
+  status?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -20,15 +25,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : null;
   });
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Mock authentication - replace with your API call
-    if (username === "admin" && password === "admin123") {
-      const userData = { username, name: "Administrator" };
-      setUser(userData);
-      localStorage.setItem("auth_user", JSON.stringify(userData));
-      return true;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await loginUser({ email, password });
+      
+      if (response.status === "success" && response.data) {
+        const userData: User = {
+          id: response.data.id,
+          email: response.data.email,
+          name: response.data.name,
+          role: response.data.role,
+          status: response.data.status,
+        };
+        setUser(userData);
+        localStorage.setItem("auth_user", JSON.stringify(userData));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {

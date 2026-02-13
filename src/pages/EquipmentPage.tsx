@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import AddEquipmentModal from "@/components/dialogs/AddEquipmentModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,12 +34,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Wrench, Search, DollarSign } from "lucide-react";
-import { mockEquipment, mockCategories, Equipment } from "@/data/mockData";
+import { Plus, Pencil, Trash2, Wrench, Search, DollarSign, AlertCircle } from "lucide-react";
+import { Equipment } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { getEquipment, createEquipment, updateEquipment, deleteEquipment } from "@/services/equipmentService";
+import { getCategories } from "@/services/categoriesService";
 
 export default function EquipmentPage() {
-  const [equipment, setEquipment] = useState<Equipment[]>(mockEquipment);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -46,102 +53,135 @@ export default function EquipmentPage() {
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    modelNumber: "",
-    categoryId: "",
-    pricePerDay: "",
+    category_id: "",
+    hourly_rate: "",
+    daily_rate: "",
     description: "",
-    image: "",
     status: "available" as Equipment["status"],
   });
   const { toast } = useToast();
 
-  const filteredEquipment = equipment.filter((eq) => {
-    const matchesSearch = eq.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eq.modelNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || eq.categoryId === categoryFilter;
-    const matchesStatus = statusFilter === "all" || eq.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Load equipment and categories on mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [equipmentData, categoriesData] = await Promise.all([
+        getEquipment(),
+        getCategories(),
+      ]);
+      
+      setEquipment(equipmentData);
+      setCategories(categoriesData);
+    } catch (err) {
+      setError('Failed to load equipment');
+      console.error(err);
+      toast({ title: "Error", description: "Failed to load equipment", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
       name: "",
-      modelNumber: "",
-      categoryId: "",
-      pricePerDay: "",
+      category_id: "",
+      hourly_rate: "",
+      daily_rate: "",
       description: "",
-      image: "",
       status: "available",
     });
   };
 
-  const handleAdd = () => {
-    if (!formData.name.trim() || !formData.categoryId || !formData.pricePerDay) {
+  const handleAdd = async () => {
+    if (!formData.name.trim() || !formData.category_id || !formData.daily_rate) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
-    const category = mockCategories.find((c) => c.id === formData.categoryId);
-    const newEquipment: Equipment = {
-      id: Date.now().toString(),
-      name: formData.name,
-      modelNumber: formData.modelNumber,
-      categoryId: formData.categoryId,
-      categoryName: category?.name || "",
-      pricePerDay: parseFloat(formData.pricePerDay),
-      description: formData.description,
-      image: formData.image || "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=400",
-      status: formData.status,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      setSaveLoading(true);
+      await createEquipment({
+        name: formData.name,
+        category_id: parseInt(formData.category_id),
+        hourly_rate: parseFloat(formData.hourly_rate || "0"),
+        daily_rate: parseFloat(formData.daily_rate),
+        description: formData.description,
+        status: formData.status,
+      });
 
-    setEquipment([...equipment, newEquipment]);
-    resetForm();
-    setIsAddOpen(false);
-    toast({ title: "Success", description: "Equipment added successfully" });
+      resetForm();
+      setIsAddOpen(false);
+      await fetchData();
+      toast({ title: "Success", description: "Equipment added successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to add equipment", variant: "destructive" });
+      console.error(err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editingEquipment) return;
 
-    const category = mockCategories.find((c) => c.id === formData.categoryId);
-    setEquipment(equipment.map((eq) =>
-      eq.id === editingEquipment.id
-        ? {
-            ...eq,
-            name: formData.name,
-            modelNumber: formData.modelNumber,
-            categoryId: formData.categoryId,
-            categoryName: category?.name || eq.categoryName,
-            pricePerDay: parseFloat(formData.pricePerDay),
-            description: formData.description,
-            image: formData.image,
-            status: formData.status,
-          }
-        : eq
-    ));
-    setEditingEquipment(null);
-    resetForm();
-    toast({ title: "Success", description: "Equipment updated successfully" });
+    try {
+      setSaveLoading(true);
+      await updateEquipment(editingEquipment.id, {
+        name: formData.name,
+        category_id: parseInt(formData.category_id),
+        hourly_rate: parseFloat(formData.hourly_rate || "0"),
+        daily_rate: parseFloat(formData.daily_rate),
+        description: formData.description,
+        status: formData.status,
+      });
+
+      setEditingEquipment(null);
+      resetForm();
+      await fetchData();
+      toast({ title: "Success", description: "Equipment updated successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update equipment", variant: "destructive" });
+      console.error(err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setEquipment(equipment.filter((eq) => eq.id !== id));
-    toast({ title: "Deleted", description: "Equipment removed successfully" });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEquipment(id);
+      await fetchData();
+      toast({ title: "Deleted", description: "Equipment removed successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete equipment", variant: "destructive" });
+      console.error(err);
+    }
   };
 
   const openEditDialog = (eq: Equipment) => {
     setEditingEquipment(eq);
     setFormData({
       name: eq.name,
-      modelNumber: eq.modelNumber,
-      categoryId: eq.categoryId,
-      pricePerDay: eq.pricePerDay.toString(),
+      category_id: eq.categoryId,
+      hourly_rate: eq.hourlyRate?.toString() || "0",
+      daily_rate: eq.dailyRate?.toString() || "0",
       description: eq.description,
-      image: eq.image,
       status: eq.status,
     });
   };
+
+  const filteredEquipment = equipment.filter((eq) => {
+    const matchesSearch = eq.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || eq.categoryId === categoryFilter;
+    const matchesStatus = statusFilter === "all" || eq.status === statusFilter;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   const getStatusBadge = (status: Equipment["status"]) => {
     switch (status) {
@@ -162,58 +202,54 @@ export default function EquipmentPage() {
           placeholder="Enter equipment name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Model Number</Label>
-        <Input
-          placeholder="Enter model number"
-          value={formData.modelNumber}
-          onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
+          onKeyDown={(e) => e.stopPropagation()}
         />
       </div>
       <div className="space-y-2">
         <Label>Category *</Label>
-        <Select value={formData.categoryId} onValueChange={(val) => setFormData({ ...formData, categoryId: val })}>
-          <SelectTrigger>
+        <Select value={formData.category_id} onValueChange={(val) => setFormData({ ...formData, category_id: val })}>
+          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {mockCategories.map((cat) => (
+            {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Price per Day ($) *</Label>
+        <Label>Hourly Rate ($)</Label>
         <Input
           type="number"
-          placeholder="Enter price"
-          value={formData.pricePerDay}
-          onChange={(e) => setFormData({ ...formData, pricePerDay: e.target.value })}
+          placeholder="Enter hourly rate"
+          value={formData.hourly_rate}
+          onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+          onKeyDown={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Daily Rate ($) *</Label>
+        <Input
+          type="number"
+          placeholder="Enter daily rate"
+          value={formData.daily_rate}
+          onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
+          onKeyDown={(e) => e.stopPropagation()}
         />
       </div>
       <div className="space-y-2">
         <Label>Status</Label>
         <Select value={formData.status} onValueChange={(val: Equipment["status"]) => setFormData({ ...formData, status: val })}>
-          <SelectTrigger>
+          <SelectTrigger onKeyDown={(e) => e.stopPropagation()}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="booked">Booked</SelectItem>
             <SelectItem value="maintenance">Maintenance</SelectItem>
+            <SelectItem value="unavailable">Unavailable</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Image URL</Label>
-        <Input
-          placeholder="Enter image URL"
-          value={formData.image}
-          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-        />
       </div>
       <div className="col-span-2 space-y-2">
         <Label>Description</Label>
@@ -221,10 +257,45 @@ export default function EquipmentPage() {
           placeholder="Enter description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onKeyDown={(e) => e.stopPropagation()}
         />
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <AdminLayout title="Equipment" subtitle="Manage your rental equipment inventory">
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-64 bg-muted animate-pulse rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Equipment" subtitle="Manage your rental equipment inventory">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              <p>{error}</p>
+              <Button variant="outline" onClick={fetchData} size="sm" className="ml-auto">
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Equipment" subtitle="Manage your rental equipment inventory">
@@ -250,7 +321,7 @@ export default function EquipmentPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {mockCategories.map((cat) => (
+                {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -262,29 +333,25 @@ export default function EquipmentPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="booked">Booked</SelectItem>
                 <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="unavailable">Unavailable</SelectItem>
               </SelectContent>
             </Select>
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button className="gradient-primary" onClick={resetForm}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Equipment
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Equipment</DialogTitle>
-                  <DialogDescription>Add a new equipment to your inventory</DialogDescription>
-                </DialogHeader>
-                <EquipmentForm />
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAdd} className="gradient-primary">Add Equipment</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            {/* Add Equipment Modal (separated into its own component) */}
+            <AddEquipmentModal
+              open={isAddOpen}
+              onOpenChange={(o) => {
+                if (!o) resetForm();
+                setIsAddOpen(o);
+              }}
+              categories={categories}
+              onCreated={async () => {
+                resetForm();
+                await fetchData();
+                // refresh list after creation (toast is shown by modal)
+                await Promise.resolve();
+              }}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -296,6 +363,12 @@ export default function EquipmentPage() {
                     src={eq.image}
                     alt={eq.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes('placehold.co')) {
+                        target.src = 'https://placehold.co/400x300?text=Image+Not+Found';
+                      }
+                    }}
                   />
                   <div className="absolute top-3 right-3">
                     {getStatusBadge(eq.status)}
@@ -305,15 +378,15 @@ export default function EquipmentPage() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-lg">{eq.name}</h3>
-                      <p className="text-sm text-muted-foreground">{eq.modelNumber}</p>
+                      <p className="text-sm text-muted-foreground">{eq.category}</p>
                     </div>
-                    <Badge variant="outline">{eq.categoryName}</Badge>
+                    <Badge variant="outline">{eq.category}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{eq.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-primary font-bold text-lg">
                       <DollarSign className="w-5 h-5" />
-                      {eq.pricePerDay}/day
+                      {eq.dailyRate}/day
                     </div>
                     <div className="flex gap-1">
                       <Dialog open={editingEquipment?.id === eq.id} onOpenChange={(open) => !open && setEditingEquipment(null)}>
@@ -330,7 +403,9 @@ export default function EquipmentPage() {
                           <EquipmentForm isEdit />
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setEditingEquipment(null)}>Cancel</Button>
-                            <Button onClick={handleEdit} className="gradient-primary">Save Changes</Button>
+                            <Button onClick={handleEdit} className="gradient-primary" disabled={saveLoading}>
+                              {saveLoading ? "Saving..." : "Save Changes"}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

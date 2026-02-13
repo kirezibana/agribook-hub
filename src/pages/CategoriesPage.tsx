@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,64 +26,142 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, FolderOpen, Search } from "lucide-react";
-import { mockCategories, Category } from "@/data/mockData";
+import { Plus, Pencil, Trash2, FolderOpen, Search, AlertCircle } from "lucide-react";
+import { Category } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { getCategories, createCategory, updateCategory, deleteCategory } from "@/services/categoriesService";
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const { toast } = useToast();
 
+  // Load categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getCategories();
+      setCategories(data);
+    } catch (err) {
+      setError('Failed to load categories');
+      console.error(err);
+      toast({ title: "Error", description: "Failed to load categories", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name.trim()) {
       toast({ title: "Error", description: "Category name is required", variant: "destructive" });
       return;
     }
 
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      equipmentCount: 0,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      setSaveLoading(true);
+      await createCategory({
+        name: formData.name,
+        description: formData.description,
+      });
 
-    setCategories([...categories, newCategory]);
-    setFormData({ name: "", description: "" });
-    setIsAddOpen(false);
-    toast({ title: "Success", description: "Category added successfully" });
+      setFormData({ name: "", description: "" });
+      setIsAddOpen(false);
+      await fetchCategories();
+      toast({ title: "Success", description: "Category added successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to add category", variant: "destructive" });
+      console.error(err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editingCategory || !formData.name.trim()) return;
 
-    setCategories(categories.map((cat) =>
-      cat.id === editingCategory.id
-        ? { ...cat, name: formData.name, description: formData.description }
-        : cat
-    ));
-    setEditingCategory(null);
-    setFormData({ name: "", description: "" });
-    toast({ title: "Success", description: "Category updated successfully" });
+    try {
+      setSaveLoading(true);
+      await updateCategory(editingCategory.id, {
+        name: formData.name,
+        description: formData.description,
+      });
+
+      setEditingCategory(null);
+      setFormData({ name: "", description: "" });
+      await fetchCategories();
+      toast({ title: "Success", description: "Category updated successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update category", variant: "destructive" });
+      console.error(err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setCategories(categories.filter((cat) => cat.id !== id));
-    toast({ title: "Deleted", description: "Category removed successfully" });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCategory(id);
+      await fetchCategories();
+      toast({ title: "Deleted", description: "Category removed successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete category", variant: "destructive" });
+      console.error(err);
+    }
   };
 
   const openEditDialog = (category: Category) => {
     setEditingCategory(category);
     setFormData({ name: category.name, description: category.description });
   };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Categories" subtitle="Manage your equipment categories">
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Categories" subtitle="Manage your equipment categories">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              <p>{error}</p>
+              <Button variant="outline" onClick={fetchCategories} size="sm" className="ml-auto">
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Categories" subtitle="Manage your equipment categories">
@@ -137,7 +215,9 @@ export default function CategoriesPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAdd} className="gradient-primary">Add Category</Button>
+                  <Button onClick={handleAdd} className="gradient-primary" disabled={saveLoading}>
+                    {saveLoading ? "Adding..." : "Add Category"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -198,7 +278,9 @@ export default function CategoriesPage() {
                           </div>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setEditingCategory(null)}>Cancel</Button>
-                            <Button onClick={handleEdit} className="gradient-primary">Save Changes</Button>
+                            <Button onClick={handleEdit} className="gradient-primary" disabled={saveLoading}>
+                              {saveLoading ? "Saving..." : "Save Changes"}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarCheck, Search, Eye, Pencil, Trash2, Phone, Calendar } from "lucide-react";
-import { mockBookings, Booking } from "@/data/mockData";
+import { CalendarCheck, Search, Eye, Pencil, Trash2, Phone, Calendar, AlertCircle } from "lucide-react";
+import { Booking } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { getBookings, updateBooking, deleteBooking } from "@/services/bookingsService";
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
@@ -46,27 +50,65 @@ export default function BookingsPage() {
   const [editStatus, setEditStatus] = useState<Booking["status"]>("pending");
   const { toast } = useToast();
 
+  // Load bookings on mount
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getBookings();
+      setBookings(data);
+    } catch (err) {
+      setError('Failed to load bookings');
+      console.error(err);
+      toast({ title: "Error", description: "Failed to load bookings", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch = 
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.equipmentName.toLowerCase().includes(searchQuery.toLowerCase());
+    const customerName = (booking.customerName || '').toString();
+    const equipmentName = (booking.equipmentName || '').toString();
+    const matchesSearch =
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      equipmentName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     if (!editingBooking) return;
     
-    setBookings(bookings.map((b) =>
-      b.id === editingBooking.id ? { ...b, status: editStatus } : b
-    ));
-    setEditingBooking(null);
-    toast({ title: "Success", description: "Booking status updated" });
+    try {
+      setSaveLoading(true);
+      await updateBooking(editingBooking.id, { status: editStatus } as any);
+      
+      setBookings(bookings.map((b) =>
+        b.id === editingBooking.id ? { ...b, status: editStatus } : b
+      ));
+      setEditingBooking(null);
+      toast({ title: "Success", description: "Booking status updated" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update booking", variant: "destructive" });
+      console.error(err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setBookings(bookings.filter((b) => b.id !== id));
-    toast({ title: "Deleted", description: "Booking removed successfully" });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteBooking(id);
+      await fetchBookings();
+      toast({ title: "Deleted", description: "Booking removed successfully" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete booking", variant: "destructive" });
+      console.error(err);
+    }
   };
 
   const getStatusBadge = (status: Booking["status"]) => {
@@ -82,6 +124,40 @@ export default function BookingsPage() {
       </Badge>
     );
   };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Bookings" subtitle="Manage customer equipment bookings">
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Bookings" subtitle="Manage customer equipment bookings">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              <p>{error}</p>
+              <Button variant="outline" onClick={fetchBookings} size="sm" className="ml-auto">
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Bookings" subtitle="Manage customer equipment bookings">
@@ -136,7 +212,7 @@ export default function BookingsPage() {
                       <p className="font-semibold">{booking.customerName}</p>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Phone className="w-3 h-3" />
-                        {booking.customerPhone}
+                        {booking.customerPhone || 'N/A'}
                       </p>
                     </div>
                   </TableCell>
@@ -149,16 +225,16 @@ export default function BookingsPage() {
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>{booking.startDate}</span>
+                      <span>{booking.startDate ? String(booking.startDate) : ''}</span>
                       <span>→</span>
-                      <span>{booking.endDate}</span>
+                      <span>{booking.endDate ? String(booking.endDate) : ''}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium">{booking.totalDays} days</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-bold text-primary">${booking.totalPrice}</span>
+                    <span className="font-medium">{booking.totalDays ?? 0} days</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-bold text-primary">${booking.totalPrice !== undefined && booking.totalPrice !== null ? booking.totalPrice : '0.00'}</span>
                   </TableCell>
                   <TableCell>{getStatusBadge(booking.status)}</TableCell>
                   <TableCell className="text-right">
@@ -179,35 +255,35 @@ export default function BookingsPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Customer Name</Label>
-                                <p className="font-semibold">{booking.customerName}</p>
+                                <p className="font-semibold">{booking.customerName || ''}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Phone</Label>
-                                <p className="font-semibold">{booking.customerPhone}</p>
+                                <p className="font-semibold">{booking.customerPhone || 'N/A'}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Equipment</Label>
-                                <p className="font-semibold">{booking.equipmentName}</p>
+                                <p className="font-semibold">{booking.equipmentName || ''}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Category</Label>
-                                <p className="font-semibold">{booking.categoryName}</p>
+                                <p className="font-semibold">{booking.categoryName || ''}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Start Date</Label>
-                                <p className="font-semibold">{booking.startDate}</p>
+                                <p className="font-semibold">{booking.startDate ? String(booking.startDate) : ''}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">End Date</Label>
-                                <p className="font-semibold">{booking.endDate}</p>
+                                <p className="font-semibold">{booking.endDate ? String(booking.endDate) : ''}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Duration</Label>
-                                <p className="font-semibold">{booking.totalDays} days</p>
+                                <p className="font-semibold">{typeof booking.totalDays === 'number' ? booking.totalDays : (booking.totalDays ? Number(booking.totalDays) : 0)} days</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Total Price</Label>
-                                <p className="font-semibold text-primary">${booking.totalPrice}</p>
+                                <p className="font-semibold text-primary">${booking.totalPrice !== undefined && booking.totalPrice !== null ? booking.totalPrice : '0.00'}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Status</Label>
@@ -215,7 +291,7 @@ export default function BookingsPage() {
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Created</Label>
-                                <p className="font-semibold">{booking.createdAt}</p>
+                                <p className="font-semibold">{booking.createdAt ? String(booking.createdAt) : ''}</p>
                               </div>
                             </div>
                           </div>
@@ -262,7 +338,9 @@ export default function BookingsPage() {
                           </div>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setEditingBooking(null)}>Cancel</Button>
-                            <Button onClick={handleUpdateStatus} className="gradient-primary">Update Status</Button>
+                            <Button onClick={handleUpdateStatus} className="gradient-primary" disabled={saveLoading}>
+                              {saveLoading ? "Updating..." : "Update Status"}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

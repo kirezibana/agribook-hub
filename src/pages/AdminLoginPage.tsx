@@ -5,21 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Tractor, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  if (isAuthenticated) {
+  // If already authenticated and is admin, redirect to dashboard
+  if (isAuthenticated && user?.role === "admin") {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // If authenticated but not admin, logout first
+  if (isAuthenticated && user?.role !== "admin") {
+    return <Navigate to="/login" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,10 +35,10 @@ export default function LoginPage() {
 
     try {
       const success = await login(email, password);
-      
+
       if (success) {
         toast({
-          title: "Welcome back!",
+          title: "Welcome Admin!",
           description: "You have successfully logged in.",
         });
         navigate("/dashboard");
@@ -66,15 +72,25 @@ export default function LoginPage() {
       </div>
 
       <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 glass-effect">
-        <CardHeader className="text-center pb-2">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/login")}
+          className="absolute top-4 left-4 z-10"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+
+        <CardHeader className="text-center pb-2 pt-8">
           <div className="mx-auto w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-lg mb-4">
             <Tractor className="w-9 h-9 text-primary-foreground" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            AgriRent Admin
+            Admin Portal
           </CardTitle>
           <CardDescription className="text-base">
-            Agriculture Equipment Booking System
+            Agriculture Equipment Management System
           </CardDescription>
         </CardHeader>
 
@@ -142,26 +158,21 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground text-center">
-                <strong>Demo credentials:</strong><br />
-                <strong>Admin:</strong> <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin@agribook.com</code> / <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin123</code><br />
-                <strong>Customer:</strong> <code className="bg-primary/10 px-1.5 py-0.5 rounded">james@example.com</code> / <code className="bg-primary/10 px-1.5 py-0.5 rounded">password123</code>
-              </p>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-3">Are you an admin?</p>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/admin-login")}
-                className="w-full"
-              >
-                Go to Admin Portal
-              </Button>
-            </div>
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground text-center">
+              <strong>Admin credentials:</strong><br />
+              Email: <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin@agribook.com</code><br />
+              Password: <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin123</code>
+            </p>
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/login")}
+            className="w-full mt-4"
+          >
+            Back to Customer Login
+          </Button>
         </CardContent>
       </Card>
     </div>
