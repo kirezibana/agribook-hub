@@ -2,6 +2,8 @@
  * Utility functions for handling image paths
  */
 
+const API_BASE_URL = 'http://localhost/agriAPIs/';
+
 /**
  * Converts a local file path to a web-accessible URL
  * @param imagePath - The image path from the backend
@@ -47,9 +49,8 @@ export function formatImagePath(imagePath: string | null | undefined): string {
     }
   }
 
-  // If none of the above conditions match, return as is
-  // (might be a relative path that's already web-accessible)
-  return imagePath;
+  // If it's a relative path (like "images/equipment_9.jpg"), prepend the API base URL
+  return `${API_BASE_URL}${imagePath}`;
 }
 
 /**
