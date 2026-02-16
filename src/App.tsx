@@ -4,8 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import LoginPage from "./pages/LoginPage";
-import AdminLoginPage from "./pages/AdminLoginPage";
+import RoleBasedLoginPage from "./pages/RoleBasedLoginPage";
 import HomePage from "./pages/HomePage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -14,6 +13,7 @@ import EquipmentPage from "./pages/EquipmentPage";
 import BookingsPage from "./pages/BookingsPage";
 import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -22,11 +22,11 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user?.role !== "admin") {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -42,6 +42,17 @@ function CustomerRoute({ children }: { children: React.ReactNode }) {
 
   if (user?.role === "admin") {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Protected route for authenticated users (both admin and customer)
+function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -67,8 +78,8 @@ function AppRoutes() {
           )
         }
       />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/admin-login" element={<AdminLoginPage />} />
+      <Route path="/login" element={<RoleBasedLoginPage />} />
+      <Route path="/admin-login" element={<Navigate to="/login" replace />} />
 
       {/* Customer Routes */}
       <Route
@@ -127,6 +138,14 @@ function AppRoutes() {
           <AdminRoute>
             <ReportsPage />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <AuthenticatedRoute>
+            <ProfilePage />
+          </AuthenticatedRoute>
         }
       />
 

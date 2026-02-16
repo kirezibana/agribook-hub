@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Tractor, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export default function AdminLoginPage() {
+export default function RoleBasedLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,14 +18,13 @@ export default function AdminLoginPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // If already authenticated and is admin, redirect to dashboard
-  if (isAuthenticated && user?.role === "admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If authenticated but not admin, logout first
-  if (isAuthenticated && user?.role !== "admin") {
-    return <Navigate to="/login" replace />;
+  // If already authenticated, redirect based on role
+  if (isAuthenticated) {
+    if (user?.role === "admin") {
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,11 +36,20 @@ export default function AdminLoginPage() {
       const success = await login(email, password);
 
       if (success) {
-        toast({
-          title: "Welcome Admin!",
-          description: "You have successfully logged in.",
-        });
-        navigate("/dashboard");
+        // Redirect based on user role after successful login
+        if (user?.role === "admin") {
+          toast({
+            title: "Welcome Admin!",
+            description: "You have successfully logged in to the admin panel.",
+          });
+          navigate("/dashboard");
+        } else {
+          toast({
+            title: "Welcome!",
+            description: "You have successfully logged in.",
+          });
+          navigate("/dashboard");
+        }
       } else {
         setApiError("Invalid email or password");
         toast({
@@ -72,25 +80,15 @@ export default function AdminLoginPage() {
       </div>
 
       <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 glass-effect">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/login")}
-          className="absolute top-4 left-4 z-10"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-
-        <CardHeader className="text-center pb-2 pt-8">
+        <CardHeader className="text-center pb-2">
           <div className="mx-auto w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-lg mb-4">
             <Tractor className="w-9 h-9 text-primary-foreground" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Admin Portal
+            AgriRent Login
           </CardTitle>
           <CardDescription className="text-base">
-            Agriculture Equipment Management System
+            Agriculture Equipment Booking System
           </CardDescription>
         </CardHeader>
 
@@ -158,21 +156,17 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground text-center">
-              <strong>Admin credentials:</strong><br />
-              Email: <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin@agribook.com</code><br />
-              Password: <code className="bg-primary/10 px-1.5 py-0.5 rounded">admin123</code>
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="text-center">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/")}
+                className="w-full"
+              >
+                Back to Home
+              </Button>
+            </div>
           </div>
-
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/login")}
-            className="w-full mt-4"
-          >
-            Back to Customer Login
-          </Button>
         </CardContent>
       </Card>
     </div>

@@ -14,7 +14,7 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}/${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -24,13 +24,18 @@ async function fetchApi<T>(
       },
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
+    console.log('API Response:', data); // Debug log
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error);
     return {
       status: 'error',
-      message: 'Failed to fetch data. Please check your connection.',
+      message: error.message || 'Failed to fetch data. Please check your connection.',
     };
   }
 }

@@ -46,8 +46,11 @@ export async function registerUser(data: RegisterRequest): Promise<ApiResponse<L
 
 // Login user
 export async function loginUser(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-  return fetchApi<LoginResponse>('users.php?action=login', {
+  return fetchApi<LoginResponse>('login.php', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(data),
   });
 }

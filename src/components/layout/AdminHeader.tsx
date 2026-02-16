@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface AdminHeaderProps {
   title: string;
@@ -65,9 +66,11 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="w-4 h-4 mr-2" />
-                Profile
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="w-full flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">

@@ -195,6 +195,7 @@ export default function BookingsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Equipment</TableHead>
                 <TableHead>Dates</TableHead>
@@ -205,8 +206,11 @@ export default function BookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredBookings.map((booking) => (
+              {filteredBookings.map((booking, index) => (
                 <TableRow key={booking.id} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">
+                    {index + 1}
+                  </TableCell>
                   <TableCell>
                     <div>
                       <p className="font-semibold">{booking.customerName}</p>
