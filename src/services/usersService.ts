@@ -44,15 +44,25 @@ export async function registerUser(data: RegisterRequest): Promise<ApiResponse<L
   });
 }
 
-// Login user
+// Login user (PHP backend uses $_POST, so send as FormData)
 export async function loginUser(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-  return fetchApi<LoginResponse>('login.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  const formData = new FormData();
+  formData.append('email', data.email);
+  formData.append('password', data.password);
+
+  const url = `http://localhost/agriAPIs/login.php`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json();
+    console.log('Login API Response:', result);
+    return result;
+  } catch (error: any) {
+    console.error('Login API Error:', error);
+    return { status: 'error', message: error.message || 'Login failed' };
+  }
 }
 
 // Get all users
