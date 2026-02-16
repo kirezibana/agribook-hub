@@ -23,7 +23,7 @@ export default function RoleBasedLoginPage() {
     if (user?.role === "admin") {
       return <Navigate to="/dashboard" replace />;
     } else {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/home" replace />;
     }
   }
 
@@ -36,8 +36,9 @@ export default function RoleBasedLoginPage() {
       const success = await login(email, password);
 
       if (success) {
-        // Redirect based on user role after successful login
-        if (user?.role === "admin") {
+        // Role is now set in AuthContext after login, re-read from localStorage
+        const storedUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
+        if (storedUser?.role === "admin") {
           toast({
             title: "Welcome Admin!",
             description: "You have successfully logged in to the admin panel.",
@@ -48,7 +49,7 @@ export default function RoleBasedLoginPage() {
             title: "Welcome!",
             description: "You have successfully logged in.",
           });
-          navigate("/dashboard");
+          navigate("/home");
         }
       } else {
         setApiError("Invalid email or password");
