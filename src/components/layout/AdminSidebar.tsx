@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Tractor
+  Tractor,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Equipment", href: "/equipment", icon: Wrench },
   { name: "Bookings", href: "/bookings", icon: CalendarCheck },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Manage Users", href: "/manage-users", icon: Users },
 ];
 
 export function AdminSidebar() {

@@ -127,7 +127,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 AgriRent. All rights reserved.</p>
+            <p>&copy; Hortense Bana 2026</p>
           </div>
         </div>
       </footer>
