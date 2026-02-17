@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,18 @@ import {
 } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Calendar as CalendarIcon, Download, Filter, TrendingUp, DollarSign, Clock } from "lucide-react";
-import { mockBookings, mockCategories, mockEquipment } from "@/data/mockData";
+import { BarChart3, Calendar as CalendarIcon, Download, Filter, TrendingUp, DollarSign, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { cn } from "@/lib/utils";
+import { getBookings } from "@/services/bookingsService";
+import { getCategories } from "@/services/categoriesService";
+import { Booking, Category } from "@/data/mockData";
 
 export default function ReportsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined,
@@ -33,19 +38,44 @@ export default function ReportsPage() {
   const [equipmentFilter, setEquipmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [bookingsData, categoriesData] = await Promise.all([
+          getBookings(),
+          getCategories(),
+        ]);
+        setBookings(bookingsData);
+        setCategories(categoriesData);
+      } catch (e) {
+        console.error("Failed to fetch report data:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Get unique equipment names for filter
+  const uniqueEquipment = useMemo(() => {
+    const map = new Map<string, string>();
+    bookings.forEach(b => map.set(b.equipmentId, b.equipmentName));
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [bookings]);
+
   const filteredBookings = useMemo(() => {
-    return mockBookings.filter((booking) => {
+    return bookings.filter((booking) => {
       const bookingDate = new Date(booking.startDate);
-      const matchesDateRange = 
+      const matchesDateRange =
         (!dateRange.from || bookingDate >= dateRange.from) &&
         (!dateRange.to || bookingDate <= dateRange.to);
-      const matchesCategory = categoryFilter === "all" || 
-        mockEquipment.find(e => e.id === booking.equipmentId)?.categoryId === categoryFilter;
+      const matchesCategory = categoryFilter === "all" || booking.categoryName === categoryFilter;
       const matchesEquipment = equipmentFilter === "all" || booking.equipmentId === equipmentFilter;
       const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
       return matchesDateRange && matchesCategory && matchesEquipment && matchesStatus;
     });
-  }, [dateRange, categoryFilter, equipmentFilter, statusFilter]);
+  }, [bookings, dateRange, categoryFilter, equipmentFilter, statusFilter]);
 
   const stats = useMemo(() => {
     const totalRevenue = filteredBookings.reduce((sum, b) => sum + b.totalPrice, 0);
@@ -108,6 +138,17 @@ export default function ReportsPage() {
     return <Badge className={`${styles[status]} border-0 capitalize`}>{status}</Badge>;
   };
 
+  if (loading) {
+    return (
+      <AdminLayout title="Reports" subtitle="View booking reports and analytics">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading report data...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout title="Reports" subtitle="View booking reports and analytics">
       {/* Filters */}
@@ -159,8 +200,8 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {mockCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -174,7 +215,7 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Equipment</SelectItem>
-                  {mockEquipment.map((eq) => (
+                  {uniqueEquipment.map((eq) => (
                     <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>
                   ))}
                 </SelectContent>
