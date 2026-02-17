@@ -157,19 +157,20 @@ export default function RoleBasedLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
-            <div className="text-center">
-              <Button
-                variant="outline"
-                onClick={() => navigate("/")}
-                className="w-full"
-              >
-                Back to Home
+          <div className="mt-6 space-y-3">
+            <p className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => navigate("/register")}>
+                Create Account
               </Button>
-            </div>
+            </p>
           </div>
         </CardContent>
       </Card>
+
+      <footer className="absolute bottom-4 text-center w-full text-sm text-muted-foreground">
+        &copy; Hortense Bana 2026
+      </footer>
     </div>
   );
 }

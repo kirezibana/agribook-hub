@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import RoleBasedLoginPage from "./pages/RoleBasedLoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ManageUsersPage from "./pages/ManageUsersPage";
 import HomePage from "./pages/HomePage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -79,6 +81,7 @@ function AppRoutes() {
         }
       />
       <Route path="/login" element={<RoleBasedLoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/admin-login" element={<Navigate to="/login" replace />} />
 
       {/* Customer Routes */}
@@ -137,6 +140,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <ReportsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/manage-users"
+        element={
+          <AdminRoute>
+            <ManageUsersPage />
           </AdminRoute>
         }
       />

@@ -27,6 +27,9 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
             {children}
           </div>
         </main>
+        <footer className="border-t p-4 text-center text-sm text-muted-foreground">
+          &copy; Hortense Bana 2026
+        </footer>
       </div>
     </div>
   );
