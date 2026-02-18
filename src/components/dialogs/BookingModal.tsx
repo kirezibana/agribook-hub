@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const API_BASE_URL = 'http://localhost/agriAPIs';
+const POLL_INTERVAL = 3000;
+const MAX_POLL_ATTEMPTS = 40; // ~2 minutes
 
 interface BookingModalProps {
   equipment: Equipment | null;
@@ -26,10 +29,57 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transactionRef = useRef<string | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearTimeout(pollRef.current);
+      pollRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
+
+  const pollPaymentStatus = useCallback((ref: string, attempt = 0) => {
+    if (attempt >= MAX_POLL_ATTEMPTS) {
+      stopPolling();
+      setError("Payment verification timed out. Please check your phone and try again.");
+      setIsPaying(false);
+      return;
+    }
+
+    pollRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/checkPaymentStatus.php?ref=${encodeURIComponent(ref)}`);
+        const data = await res.json();
+
+        if (data.status === "SUCCESSFUL") {
+          stopPolling();
+          setPaymentDone(true);
+          setIsPaying(false);
+          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
+          // Auto-confirm booking
+          handleConfirmBookingAfterPayment();
+        } else if (data.status === "FAILED") {
+          stopPolling();
+          setIsPaying(false);
+          setError("Payment failed. Please try again.");
+          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
+        } else {
+          // Still pending, keep polling
+          pollPaymentStatus(ref, attempt + 1);
+        }
+      } catch {
+        pollPaymentStatus(ref, attempt + 1);
+      }
+    }, POLL_INTERVAL);
+  }, [stopPolling, toast]);
 
   if (!equipment) return null;
 
@@ -61,20 +111,30 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
       });
       const data = await response.json();
 
-      if (data?.status === 'success' || data?.transactions) {
+      // Paypack returns a ref in the response
+      const ref = data?.ref || data?.data?.ref || data?.transactions?.ref;
+
+      if (ref) {
+        transactionRef.current = ref;
+        setIsPolling(true);
+        toast({ title: "Payment initiated! 📱", description: "Check your phone to confirm the payment. We're waiting for confirmation..." });
+        pollPaymentStatus(ref);
+      } else if (data?.status === 'success' || data?.transactions) {
+        // Fallback if no ref but success
         setPaymentDone(true);
+        setIsPaying(false);
         toast({ title: "Payment initiated!", description: "Check your phone to confirm the payment." });
       } else {
+        setIsPaying(false);
         setError(data?.message || "Payment failed. Please try again.");
       }
     } catch (err: any) {
-      setError(err.message || "Payment request failed. Check your connection.");
-    } finally {
       setIsPaying(false);
+      setError(err.message || "Payment request failed. Check your connection.");
     }
   };
 
-  const handleConfirmBooking = async () => {
+  const handleConfirmBookingAfterPayment = async () => {
     setError(null);
     const days = getDays();
 
@@ -94,10 +154,11 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
       });
 
       if (response.status === "success") {
-        toast({ title: "Booking Confirmed!", description: `Equipment booked for ${days} day${days > 1 ? "s" : ""}. Total: $${totalCost.toFixed(2)}` });
-        setStartDate(""); setEndDate(""); setPhoneNumber(""); setError(null); setPaymentDone(false);
+        toast({ title: "Booking Confirmed! 🎉", description: `Equipment booked for ${days} day${days > 1 ? "s" : ""}. Total: $${totalCost.toFixed(2)}` });
+        resetForm();
         onOpenChange(false);
         onSuccess?.();
+        navigate('/my-bookings');
       } else {
         setError(response.message || "Failed to create booking");
       }
@@ -108,11 +169,16 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
     }
   };
 
+  const resetForm = () => {
+    setStartDate(""); setEndDate(""); setPhoneNumber(""); setError(null); setPaymentDone(false);
+    transactionRef.current = null;
+    stopPolling();
+  };
+
   const handleClose = (val: boolean) => {
     if (!val) {
-      setPaymentDone(false);
-      setError(null);
-      setPhoneNumber("");
+      resetForm();
+      setIsPaying(false);
     }
     onOpenChange(val);
   };
@@ -150,15 +216,22 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
             </div>
           )}
 
+          {isPolling && (
+            <div className="bg-accent/50 border border-accent rounded-lg p-3 flex gap-2 text-accent-foreground text-sm">
+              <Loader2 className="w-4 h-4 flex-shrink-0 mt-0.5 animate-spin" />
+              <span>Waiting for payment confirmation from your phone... Please approve the transaction on your mobile.</span>
+            </div>
+          )}
+
           {paymentDone && (
             <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 flex gap-2 text-primary text-sm">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>Payment successful! Click "Confirm Booking" to finalize.</span>
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>Payment confirmed! Finalizing your booking...</span>
             </div>
           )}
 
           <div className="space-y-2">
             <Label htmlFor="start-date">Start Date</Label>
-            <Input id="start-date" type="date" min={today} value={startDate} disabled={paymentDone} onChange={(e) => {
+            <Input id="start-date" type="date" min={today} value={startDate} disabled={paymentDone || isPaying} onChange={(e) => {
               setStartDate(e.target.value);
               if (!endDate && e.target.value) {
                 const nextDay = new Date(e.target.value);
@@ -169,7 +242,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
           </div>
           <div className="space-y-2">
             <Label htmlFor="end-date">End Date</Label>
-            <Input id="end-date" type="date" min={startDate || today} value={endDate} disabled={paymentDone} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
+            <Input id="end-date" type="date" min={startDate || today} value={endDate} disabled={paymentDone || isPaying} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
           </div>
 
           <div className="space-y-2">
@@ -182,7 +255,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
                 placeholder="078XXXXXXX"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={paymentDone}
+                disabled={paymentDone || isPaying}
                 className="h-10 pl-10"
               />
             </div>
@@ -191,14 +264,10 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
-          {!paymentDone ? (
-            <Button onClick={handlePay} className="gradient-primary" disabled={isPaying || !startDate || !endDate || !phoneNumber}>
-              {isPaying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>) : `Pay $${totalCost > 0 ? totalCost.toFixed(2) : '0.00'}`}
-            </Button>
-          ) : (
-            <Button onClick={handleConfirmBooking} className="gradient-primary" disabled={isLoading}>
-              {isLoading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Confirming...</>) : "Confirm Booking"}
+          <Button variant="outline" onClick={() => handleClose(false)} disabled={isPolling}>Cancel</Button>
+          {!paymentDone && (
+            <Button onClick={handlePay} className="gradient-primary" disabled={isPaying || isPolling || !startDate || !endDate || !phoneNumber}>
+              {isPaying || isPolling ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />{isPolling ? 'Waiting...' : 'Processing...'}</>) : `Pay $${totalCost > 0 ? totalCost.toFixed(2) : '0.00'}`}
             </Button>
           )}
         </DialogFooter>
