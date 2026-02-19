@@ -38,6 +38,15 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transactionRef = useRef<string | null>(null);
 
+  const today = new Date().toISOString().split("T")[0];
+
+  const getDays = () => {
+    if (!startDate || !endDate || !equipment || endDate <= startDate) return 0;
+    return Math.ceil((new Date(endDate + 'T00:00:00Z').getTime() - new Date(startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const totalCost = equipment ? getDays() * equipment.pricePerDay : 0;
+
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearTimeout(pollRef.current);
@@ -46,7 +55,6 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
     setIsPolling(false);
   }, []);
 
-  // Use a ref to store the handleConfirmBookingAfterPayment function to avoid circular dependency
   const handleConfirmBookingAfterPaymentRef = useRef<() => Promise<void>>(() => Promise.resolve());
   handleConfirmBookingAfterPaymentRef.current = async () => {
     setError(null);
@@ -117,7 +125,6 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
           setError("Payment was cancelled.");
           toast({ title: "Payment Cancelled", description: "You cancelled the payment on your phone.", variant: "destructive" });
         } else {
-          // Still pending, keep polling
           console.log(`Payment still pending, status: ${status}`);
           pollPaymentStatus(ref, attempt + 1);
         }
@@ -126,18 +133,9 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
         pollPaymentStatus(ref, attempt + 1);
       }
     }, POLL_INTERVAL);
-  }, [stopPolling, toast, equipment, user, phoneNumber, startDate, endDate, totalCost, onOpenChange, onSuccess, navigate]);
+  }, [stopPolling, toast]);
 
   if (!equipment) return null;
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const getDays = () => {
-    if (!startDate || !endDate || endDate <= startDate) return 0;
-    return Math.ceil((new Date(endDate + 'T00:00:00Z').getTime() - new Date(startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const totalCost = getDays() * equipment.pricePerDay;
 
   const handlePay = async () => {
     setError(null);
