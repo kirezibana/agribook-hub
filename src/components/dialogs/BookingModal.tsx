@@ -59,14 +59,14 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
         const res = await fetch(`${API_BASE_URL}/checkPaymentStatus.php?ref=${encodeURIComponent(ref)}`);
         const data = await res.json();
 
-        if (data.status === "SUCCESSFUL") {
+        const status = (data.status || "").toUpperCase();
+        if (status === "SUCCESSFUL") {
           stopPolling();
           setPaymentDone(true);
           setIsPaying(false);
           toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
-          // Auto-confirm booking
           handleConfirmBookingAfterPayment();
-        } else if (data.status === "FAILED") {
+        } else if (status === "FAILED") {
           stopPolling();
           setIsPaying(false);
           setError("Payment failed. Please try again.");
