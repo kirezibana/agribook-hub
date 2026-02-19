@@ -46,95 +46,9 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
     setIsPolling(false);
   }, []);
 
-  const pollPaymentStatus = useCallback((ref: string, attempt = 0) => {
-    if (attempt >= MAX_POLL_ATTEMPTS) {
-      stopPolling();
-      setError("Payment verification timed out. Please check your phone and try again.");
-      setIsPaying(false);
-      return;
-    }
-
-    pollRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/checkPaymentStatus.php?ref=${encodeURIComponent(ref)}`);
-        const data = await res.json();
-
-        const status = (data.status || "").toUpperCase();
-        if (status === "SUCCESSFUL") {
-          stopPolling();
-          setPaymentDone(true);
-          setIsPaying(false);
-          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
-          handleConfirmBookingAfterPayment();
-        } else if (status === "FAILED") {
-          stopPolling();
-          setIsPaying(false);
-          setError("Payment failed. Please try again.");
-          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
-        } else {
-          // Still pending, keep polling
-          pollPaymentStatus(ref, attempt + 1);
-        }
-      } catch {
-        pollPaymentStatus(ref, attempt + 1);
-      }
-    }, POLL_INTERVAL);
-  }, [stopPolling, toast]);
-
-  if (!equipment) return null;
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const getDays = () => {
-    if (!startDate || !endDate || endDate <= startDate) return 0;
-    return Math.ceil((new Date(endDate + 'T00:00:00Z').getTime() - new Date(startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const totalCost = getDays() * equipment.pricePerDay;
-
-  const handlePay = async () => {
-    setError(null);
-    if (!startDate || !endDate) { setError("Please select both start and end dates"); return; }
-    if (endDate <= startDate) { setError("End date must be after start date"); return; }
-    if (startDate < today) { setError("Start date cannot be in the past"); return; }
-    if (!phoneNumber || phoneNumber.length < 10) { setError("Please enter a valid phone number (e.g. 078XXXXXXX)"); return; }
-
-    try {
-      setIsPaying(true);
-      const response = await fetch(`${API_BASE_URL}/paymentAPI.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: totalCost,
-          number: phoneNumber,
-        }),
-      });
-      const data = await response.json();
-
-      // Paypack returns a ref in the response
-      const ref = data?.ref || data?.data?.ref || data?.transactions?.ref;
-
-      if (ref) {
-        transactionRef.current = ref;
-        setIsPolling(true);
-        toast({ title: "Payment initiated! 📱", description: "Check your phone to confirm the payment. We're waiting for confirmation..." });
-        pollPaymentStatus(ref);
-      } else if (data?.status === 'success' || data?.transactions) {
-        // Fallback if no ref but success
-        setPaymentDone(true);
-        setIsPaying(false);
-        toast({ title: "Payment initiated!", description: "Check your phone to confirm the payment." });
-      } else {
-        setIsPaying(false);
-        setError(data?.message || "Payment failed. Please try again.");
-      }
-    } catch (err: any) {
-      setIsPaying(false);
-      setError(err.message || "Payment request failed. Check your connection.");
-    }
-  };
-
-  const handleConfirmBookingAfterPayment = async () => {
+  // Use a ref to store the handleConfirmBookingAfterPayment function to avoid circular dependency
+  const handleConfirmBookingAfterPaymentRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  handleConfirmBookingAfterPaymentRef.current = async () => {
     setError(null);
     const days = getDays();
 
@@ -166,6 +80,126 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
       setError(err.message || "An error occurred while booking");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const pollPaymentStatus = useCallback((ref: string, attempt = 0) => {
+    if (attempt >= MAX_POLL_ATTEMPTS) {
+      stopPolling();
+      setError("Payment verification timed out. Please check your phone and try again.");
+      setIsPaying(false);
+      return;
+    }
+
+    pollRef.current = setTimeout(async () => {
+      try {
+        console.log(`Polling payment status (attempt ${attempt + 1}/${MAX_POLL_ATTEMPTS}) for ref: ${ref}`);
+        const res = await fetch(`${API_BASE_URL}/checkPaymentStatus.php?ref=${encodeURIComponent(ref)}`);
+        const data = await res.json();
+        console.log('Payment status response:', data);
+
+        const status = (data.status || "PENDING").toUpperCase();
+
+        if (status === "SUCCESSFUL" || status === "SUCCESS") {
+          stopPolling();
+          setPaymentDone(true);
+          setIsPaying(false);
+          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
+          handleConfirmBookingAfterPaymentRef.current();
+        } else if (status === "FAILED" || status === "FAILURE") {
+          stopPolling();
+          setIsPaying(false);
+          setError("Payment failed. Please try again.");
+          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
+        } else if (status === "CANCELLED") {
+          stopPolling();
+          setIsPaying(false);
+          setError("Payment was cancelled.");
+          toast({ title: "Payment Cancelled", description: "You cancelled the payment on your phone.", variant: "destructive" });
+        } else {
+          // Still pending, keep polling
+          console.log(`Payment still pending, status: ${status}`);
+          pollPaymentStatus(ref, attempt + 1);
+        }
+      } catch (err: any) {
+        console.error('Error polling payment status:', err);
+        pollPaymentStatus(ref, attempt + 1);
+      }
+    }, POLL_INTERVAL);
+  }, [stopPolling, toast, equipment, user, phoneNumber, startDate, endDate, totalCost, onOpenChange, onSuccess, navigate]);
+
+  if (!equipment) return null;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const getDays = () => {
+    if (!startDate || !endDate || endDate <= startDate) return 0;
+    return Math.ceil((new Date(endDate + 'T00:00:00Z').getTime() - new Date(startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const totalCost = getDays() * equipment.pricePerDay;
+
+  const handlePay = async () => {
+    setError(null);
+    if (!startDate || !endDate) { setError("Please select both start and end dates"); return; }
+    if (endDate <= startDate) { setError("End date must be after start date"); return; }
+    if (startDate < today) { setError("Start date cannot be in the past"); return; }
+    if (!phoneNumber || phoneNumber.length < 10) { setError("Please enter a valid phone number (e.g. 078XXXXXXX)"); return; }
+
+    try {
+      setIsPaying(true);
+      console.log('Initiating payment for:', { amount: totalCost, number: phoneNumber });
+      
+      const response = await fetch(`${API_BASE_URL}/paymentAPI.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: totalCost,
+          number: phoneNumber,
+        }),
+      });
+      
+      const data = await response.json();
+      console.log('Payment API response:', data);
+
+      // Paypack returns a ref in the response
+      const ref = data?.ref || data?.data?.ref || data?.transactions?.ref;
+
+      if (ref) {
+        transactionRef.current = ref;
+        
+        // Check if payment is already successful from the response
+        const initialStatus = (data?.status || '').toUpperCase();
+        
+        if (initialStatus === 'SUCCESSFUL' || initialStatus === 'SUCCESS') {
+          // Payment already successful
+          setPaymentDone(true);
+          setIsPaying(false);
+          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
+          handleConfirmBookingAfterPaymentRef.current();
+        } else if (initialStatus === 'FAILED' || initialStatus === 'FAILURE') {
+          setIsPaying(false);
+          setError(data?.message || "Payment failed. Please try again.");
+          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
+        } else {
+          // Start polling for status
+          setIsPolling(true);
+          toast({ title: "Payment initiated! 📱", description: "Check your phone to confirm the payment. We're waiting for confirmation..." });
+          pollPaymentStatus(ref);
+        }
+      } else if (data?.status === 'success' || data?.transactions) {
+        // Fallback if no ref but success - this shouldn't happen but keep for safety
+        setPaymentDone(true);
+        setIsPaying(false);
+        toast({ title: "Payment initiated!", description: "Check your phone to confirm the payment." });
+      } else {
+        setIsPaying(false);
+        setError(data?.message || "Payment failed. Please try again.");
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      setIsPaying(false);
+      setError(err.message || "Payment request failed. Check your connection.");
     }
   };
 
