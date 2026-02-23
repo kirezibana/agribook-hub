@@ -12,7 +12,7 @@ import { createBooking } from "@/services/bookingsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE_URL = 'http://localhost/agriAPIs';
+const API_BASE_URL = 'https://app-7d842618-ebdf-4d7a-b855-ec335ee8fdec.cleverapps.io/test';
 const POLL_INTERVAL = 3000;
 const MAX_POLL_ATTEMPTS = 40; // ~2 minutes
 

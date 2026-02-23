@@ -50,7 +50,7 @@ export async function loginUser(data: LoginRequest): Promise<ApiResponse<LoginRe
   formData.append('email', data.email);
   formData.append('password', data.password);
 
-  const url = `http://localhost/agriAPIs/login.php`;
+  const url = `https://app-7d842618-ebdf-4d7a-b855-ec335ee8fdec.cleverapps.io/test/login.php`;
   try {
     const response = await fetch(url, {
       method: 'POST',
