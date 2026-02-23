@@ -16,41 +16,50 @@ if (!$ref) {
     exit;
 }
 
-$logFile = __DIR__ . "/webhook_log.txt";
+// Check both possible log file locations
+$logFiles = [
+    __DIR__ . "/webhook_log.txt",
+    sys_get_temp_dir() . "/webhook_log.txt"
+];
 
-if (!file_exists($logFile)) {
-    echo json_encode(["status" => "pending"]);
-    exit;
-}
-
-$log = file_get_contents($logFile);
-$lines = explode(PHP_EOL, trim($log));
-
-// Search from newest to oldest
-foreach (array_reverse($lines) as $line) {
-    $line = trim($line);
-    
-    // Skip empty lines and non-JSON lines (like "API RESPONSE: ...")
-    if (empty($line) || strpos($line, 'API RESPONSE:') !== false) {
+foreach ($logFiles as $logFile) {
+    if (!file_exists($logFile)) {
         continue;
     }
-    
-    $entry = json_decode($line, true);
-    
-    // Skip if not valid JSON
-    if (!$entry || !is_array($entry)) {
+
+    $log = file_get_contents($logFile);
+    if ($log === false) {
         continue;
     }
-    
-    // Check ref at top level or nested in data
-    $entryRef = $entry['ref'] ?? $entry['data']['ref'] ?? null;
-    
-    if ($entryRef === $ref) {
-        // Normalize status to uppercase
-        $status = strtoupper($entry['status'] ?? $entry['data']['status'] ?? 'pending');
-        echo json_encode(["status" => $status]);
-        exit;
+
+    $lines = explode("\n", trim($log));
+
+    // Search from newest to oldest
+    foreach (array_reverse($lines) as $line) {
+        $line = trim($line);
+
+        // Skip empty lines and non-JSON lines
+        if (empty($line) || $line[0] !== '{') {
+            continue;
+        }
+
+        $entry = json_decode($line, true);
+
+        // Skip if not valid JSON
+        if (!$entry || !is_array($entry)) {
+            continue;
+        }
+
+        // Check ref at top level or nested in data
+        $entryRef = $entry['ref'] ?? $entry['data']['ref'] ?? null;
+
+        if ($entryRef === $ref) {
+            // Normalize status to uppercase
+            $status = strtoupper($entry['status'] ?? $entry['data']['status'] ?? 'pending');
+            echo json_encode(["status" => $status, "source" => "log"]);
+            exit;
+        }
     }
 }
 
-echo json_encode(["status" => "pending"]);
+echo json_encode(["status" => "pending", "debug" => "ref not found in logs"]);
