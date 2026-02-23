@@ -31,7 +31,7 @@ if ($status === "SUCCESSFUL") {
         "phone_number"  => $phone_number
     ];
 
-    $ch = curl_init("http://localhost/agriAPIs/payment.php");
+    $ch = curl_init("https://app-7d842618-ebdf-4d7a-b855-ec335ee8fdec.cleverapps.io/test/agriAPIs/payment.php");
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
