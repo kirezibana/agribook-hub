@@ -104,6 +104,14 @@ export async function deleteBooking(id: string): Promise<ApiResponse<any>> {
   });
 }
 
+// Change booking status via statuschanges API (confirm / complete)
+export async function changeBookingStatus(bookingId: string, action: 'confirm' | 'complete'): Promise<ApiResponse<any>> {
+  return fetchApi('statuschanges.php', {
+    method: 'PUT',
+    body: JSON.stringify({ booking_id: parseInt(bookingId), action }),
+  });
+}
+
 // Get bookings by status
 export async function getBookingsByStatus(status: 'pending' | 'confirmed' | 'completed' | 'cancelled'): Promise<Booking[]> {
   return getBookings({ status });

@@ -36,7 +36,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CalendarCheck, Search, Eye, Pencil, Trash2, Phone, Calendar, AlertCircle } from "lucide-react";
 import { Booking } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
-import { getBookings, updateBooking, deleteBooking } from "@/services/bookingsService";
+import { getBookings, updateBooking, deleteBooking, changeBookingStatus } from "@/services/bookingsService";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -80,18 +80,42 @@ export default function BookingsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const getNextAction = (currentStatus: string): 'confirm' | 'complete' | null => {
+    if (currentStatus === 'pending') return 'confirm';
+    if (currentStatus === 'confirmed') return 'complete';
+    return null;
+  };
+
+  const getNextStatusLabel = (currentStatus: string): string => {
+    if (currentStatus === 'pending') return 'Confirm';
+    if (currentStatus === 'confirmed') return 'Complete';
+    return '';
+  };
+
   const handleUpdateStatus = async () => {
     if (!editingBooking) return;
+
+    const action = getNextAction(editingBooking.status);
+    if (!action) {
+      toast({ title: "Error", description: "This booking cannot be updated further", variant: "destructive" });
+      return;
+    }
     
     try {
       setSaveLoading(true);
-      await updateBooking(editingBooking.id, { status: editStatus } as any);
+      const response = await changeBookingStatus(editingBooking.id, action);
       
+      if (response.status === 'error') {
+        toast({ title: "Error", description: response.message || "Failed to update booking", variant: "destructive" });
+        return;
+      }
+
+      const newStatus = action === 'confirm' ? 'confirmed' : 'completed';
       setBookings(bookings.map((b) =>
-        b.id === editingBooking.id ? { ...b, status: editStatus } : b
+        b.id === editingBooking.id ? { ...b, status: newStatus as Booking["status"] } : b
       ));
       setEditingBooking(null);
-      toast({ title: "Success", description: "Booking status updated" });
+      toast({ title: "Success", description: `Booking ${action === 'confirm' ? 'confirmed' : 'completed'} successfully` });
     } catch (err) {
       toast({ title: "Error", description: "Failed to update booking", variant: "destructive" });
       console.error(err);
@@ -326,25 +350,31 @@ export default function BookingsPage() {
                             <DialogTitle>Update Booking Status</DialogTitle>
                             <DialogDescription>Change the status for booking #{booking.id}</DialogDescription>
                           </DialogHeader>
-                          <div className="py-4">
-                            <Label>Status</Label>
-                            <Select value={editStatus} onValueChange={(val: Booking["status"]) => setEditStatus(val)}>
-                              <SelectTrigger className="mt-2">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="confirmed">Confirmed</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <div className="py-4 space-y-3">
+                            <div>
+                              <Label className="text-muted-foreground">Current Status</Label>
+                              <p className="mt-1">{getStatusBadge(booking.status)}</p>
+                            </div>
+                            {getNextAction(booking.status) ? (
+                              <div>
+                                <Label className="text-muted-foreground">Next Status</Label>
+                                <p className="mt-1 font-semibold capitalize">
+                                  {getNextAction(booking.status) === 'confirm' ? 'Confirmed' : 'Completed'}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                This booking is <span className="font-semibold capitalize">{booking.status}</span> and cannot be updated further.
+                              </p>
+                            )}
                           </div>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setEditingBooking(null)}>Cancel</Button>
-                            <Button onClick={handleUpdateStatus} className="gradient-primary" disabled={saveLoading}>
-                              {saveLoading ? "Updating..." : "Update Status"}
-                            </Button>
+                            {getNextAction(booking.status) && (
+                              <Button onClick={handleUpdateStatus} className="gradient-primary" disabled={saveLoading}>
+                                {saveLoading ? "Updating..." : getNextStatusLabel(booking.status)}
+                              </Button>
+                            )}
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
