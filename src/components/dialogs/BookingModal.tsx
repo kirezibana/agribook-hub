@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,15 +6,11 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, Loader2, Phone, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Loader2, Calendar } from "lucide-react";
 import { Equipment } from "@/data/mockData";
 import { createBooking } from "@/services/bookingsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-
-const API_BASE_URL = 'https://app-7d842618-ebdf-4d7a-b855-ec335ee8fdec.cleverapps.io/test';
-const POLL_INTERVAL = 3000;
-const MAX_POLL_ATTEMPTS = 40; // ~2 minutes
 
 interface BookingModalProps {
   equipment: Equipment | null;
@@ -26,17 +22,11 @@ interface BookingModalProps {
 export function BookingModal({ equipment, open, onOpenChange, onSuccess }: BookingModalProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isPaying, setIsPaying] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
-  const [paymentDone, setPaymentDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const transactionRef = useRef<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -47,18 +37,13 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
 
   const totalCost = equipment ? getDays() * equipment.pricePerDay : 0;
 
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearTimeout(pollRef.current);
-      pollRef.current = null;
-    }
-    setIsPolling(false);
-  }, []);
+  if (!equipment) return null;
 
-  const handleConfirmBookingAfterPaymentRef = useRef<() => Promise<void>>(() => Promise.resolve());
-  handleConfirmBookingAfterPaymentRef.current = async () => {
+  const handleBook = async () => {
     setError(null);
-    const days = getDays();
+    if (!startDate || !endDate) { setError("Please select both start and end dates"); return; }
+    if (endDate <= startDate) { setError("End date must be after start date"); return; }
+    if (startDate < today) { setError("Start date cannot be in the past"); return; }
 
     try {
       setIsLoading(true);
@@ -66,17 +51,17 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
         equipmentId: parseInt(equipment.id),
         customerId: parseInt(user?.id || "0"),
         customerName: user?.name || user?.email || 'Guest',
-        customerPhone: phoneNumber || (user as any)?.phone || 'N/A',
+        customerPhone: (user as any)?.phone || 'N/A',
         customerEmail: user?.email || '',
         startDate,
         endDate,
-        totalDays: days,
+        totalDays: getDays(),
         totalPrice: totalCost,
-        status: 'confirmed',
+        status: 'pending',
       });
 
       if (response.status === "success") {
-        toast({ title: "Booking Confirmed! 🎉", description: `Equipment booked for ${days} day${days > 1 ? "s" : ""}. Total: $${totalCost.toFixed(2)}` });
+        toast({ title: "Booking Submitted! 🎉", description: `Equipment booked for ${getDays()} day(s). Total: $${totalCost.toFixed(2)}` });
         resetForm();
         onOpenChange(false);
         onSuccess?.();
@@ -91,127 +76,12 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
     }
   };
 
-  const pollPaymentStatus = useCallback((ref: string, attempt = 0) => {
-    if (attempt >= MAX_POLL_ATTEMPTS) {
-      stopPolling();
-      setError("Payment verification timed out. Please check your phone and try again.");
-      setIsPaying(false);
-      return;
-    }
-
-    pollRef.current = setTimeout(async () => {
-      try {
-        console.log(`Polling payment status (attempt ${attempt + 1}/${MAX_POLL_ATTEMPTS}) for ref: ${ref}`);
-        const res = await fetch(`${API_BASE_URL}/checkPaymentStatus.php?ref=${encodeURIComponent(ref)}`);
-        const data = await res.json();
-        console.log('Payment status response:', data);
-
-        const status = (data.status || "PENDING").toUpperCase();
-
-        if (status === "SUCCESSFUL" || status === "SUCCESS") {
-          stopPolling();
-          setPaymentDone(true);
-          setIsPaying(false);
-          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
-          handleConfirmBookingAfterPaymentRef.current();
-        } else if (status === "FAILED" || status === "FAILURE") {
-          stopPolling();
-          setIsPaying(false);
-          setError("Payment failed. Please try again.");
-          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
-        } else if (status === "CANCELLED") {
-          stopPolling();
-          setIsPaying(false);
-          setError("Payment was cancelled.");
-          toast({ title: "Payment Cancelled", description: "You cancelled the payment on your phone.", variant: "destructive" });
-        } else {
-          console.log(`Payment still pending, status: ${status}`);
-          pollPaymentStatus(ref, attempt + 1);
-        }
-      } catch (err: any) {
-        console.error('Error polling payment status:', err);
-        pollPaymentStatus(ref, attempt + 1);
-      }
-    }, POLL_INTERVAL);
-  }, [stopPolling, toast]);
-
-  if (!equipment) return null;
-
-  const handlePay = async () => {
-    setError(null);
-    if (!startDate || !endDate) { setError("Please select both start and end dates"); return; }
-    if (endDate <= startDate) { setError("End date must be after start date"); return; }
-    if (startDate < today) { setError("Start date cannot be in the past"); return; }
-    if (!phoneNumber || phoneNumber.length < 10) { setError("Please enter a valid phone number (e.g. 078XXXXXXX)"); return; }
-
-    try {
-      setIsPaying(true);
-      console.log('Initiating payment for:', { amount: totalCost, number: phoneNumber });
-      
-      const response = await fetch(`${API_BASE_URL}/paymentAPI.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: totalCost,
-          number: phoneNumber,
-        }),
-      });
-      
-      const data = await response.json();
-      console.log('Payment API response:', data);
-
-      // Paypack returns a ref in the response
-      const ref = data?.ref || data?.data?.ref || data?.transactions?.ref;
-
-      if (ref) {
-        transactionRef.current = ref;
-        
-        // Check if payment is already successful from the response
-        const initialStatus = (data?.status || '').toUpperCase();
-        
-        if (initialStatus === 'SUCCESSFUL' || initialStatus === 'SUCCESS') {
-          // Payment already successful
-          setPaymentDone(true);
-          setIsPaying(false);
-          toast({ title: "Payment Successful! ✅", description: "Your payment has been confirmed. Finalizing booking..." });
-          handleConfirmBookingAfterPaymentRef.current();
-        } else if (initialStatus === 'FAILED' || initialStatus === 'FAILURE') {
-          setIsPaying(false);
-          setError(data?.message || "Payment failed. Please try again.");
-          toast({ title: "Payment Failed ❌", description: "Your mobile money payment was not successful.", variant: "destructive" });
-        } else {
-          // Start polling for status
-          setIsPolling(true);
-          toast({ title: "Payment initiated! 📱", description: "Check your phone to confirm the payment. We're waiting for confirmation..." });
-          pollPaymentStatus(ref);
-        }
-      } else if (data?.status === 'success' || data?.transactions) {
-        // Fallback if no ref but success - this shouldn't happen but keep for safety
-        setPaymentDone(true);
-        setIsPaying(false);
-        toast({ title: "Payment initiated!", description: "Check your phone to confirm the payment." });
-      } else {
-        setIsPaying(false);
-        setError(data?.message || "Payment failed. Please try again.");
-      }
-    } catch (err: any) {
-      console.error('Payment error:', err);
-      setIsPaying(false);
-      setError(err.message || "Payment request failed. Check your connection.");
-    }
-  };
-
   const resetForm = () => {
-    setStartDate(""); setEndDate(""); setPhoneNumber(""); setError(null); setPaymentDone(false);
-    transactionRef.current = null;
-    stopPolling();
+    setStartDate(""); setEndDate(""); setError(null);
   };
 
   const handleClose = (val: boolean) => {
-    if (!val) {
-      resetForm();
-      setIsPaying(false);
-    }
+    if (!val) resetForm();
     onOpenChange(val);
   };
 
@@ -235,7 +105,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
                   <span className="font-semibold">{getDays()} day(s)</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between">
-                  <span className="text-sm font-medium">Total to Pay:</span>
+                  <span className="text-sm font-medium">Total:</span>
                   <span className="font-bold text-primary">${totalCost.toFixed(2)}</span>
                 </div>
               </>
@@ -248,22 +118,9 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
             </div>
           )}
 
-          {isPolling && (
-            <div className="bg-accent/50 border border-accent rounded-lg p-3 flex gap-2 text-accent-foreground text-sm">
-              <Loader2 className="w-4 h-4 flex-shrink-0 mt-0.5 animate-spin" />
-              <span>Waiting for payment confirmation from your phone... Please approve the transaction on your mobile.</span>
-            </div>
-          )}
-
-          {paymentDone && (
-            <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 flex gap-2 text-primary text-sm">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>Payment confirmed! Finalizing your booking...</span>
-            </div>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="start-date">Start Date</Label>
-            <Input id="start-date" type="date" min={today} value={startDate} disabled={paymentDone || isPaying} onChange={(e) => {
+            <Input id="start-date" type="date" min={today} value={startDate} disabled={isLoading} onChange={(e) => {
               setStartDate(e.target.value);
               if (!endDate && e.target.value) {
                 const nextDay = new Date(e.target.value);
@@ -274,34 +131,17 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
           </div>
           <div className="space-y-2">
             <Label htmlFor="end-date">End Date</Label>
-            <Input id="end-date" type="date" min={startDate || today} value={endDate} disabled={paymentDone || isPaying} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone-number">Mobile Money Phone Number</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="phone-number"
-                type="tel"
-                placeholder="078XXXXXXX"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={paymentDone || isPaying}
-                className="h-10 pl-10"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">MTN or Airtel mobile money number</p>
+            <Input id="end-date" type="date" min={startDate || today} value={endDate} disabled={isLoading} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)} disabled={isPolling}>Cancel</Button>
-          {!paymentDone && (
-            <Button onClick={handlePay} className="gradient-primary" disabled={isPaying || isPolling || !startDate || !endDate || !phoneNumber}>
-              {isPaying || isPolling ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />{isPolling ? 'Waiting...' : 'Processing...'}</>) : `Pay $${totalCost > 0 ? totalCost.toFixed(2) : '0.00'}`}
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => handleClose(false)} disabled={isLoading}>Cancel</Button>
+          <Button onClick={handleBook} className="gradient-primary" disabled={isLoading || !startDate || !endDate || getDays() <= 0}>
+            {isLoading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>) : (
+              <><Calendar className="w-4 h-4 mr-2" />Book Now - ${totalCost > 0 ? totalCost.toFixed(2) : '0.00'}</>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

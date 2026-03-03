@@ -1,5 +1,5 @@
 // API Base URL
-const API_BASE_URL = 'https://app-7d842618-ebdf-4d7a-b855-ec335ee8fdec.cleverapps.io/test/';
+const API_BASE_URL = 'http://localhost/agriAPIs/';
 
 // Response interface
 export interface ApiResponse<T = unknown> {
