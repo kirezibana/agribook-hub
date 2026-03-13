@@ -18,7 +18,7 @@ export interface Equipment {
   description: string;
   image: string;
   status: "available" | "maintenance" | "unavailable";
-  availability: "available" | "not available";
+  availability?: "available" | "not available";
   createdAt: string;
 }
 
