@@ -86,7 +86,7 @@ export default function RoleBasedLoginPage() {
             <Tractor className="w-9 h-9 text-primary-foreground" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            AgriRent Login
+            AERS Login
           </CardTitle>
           <CardDescription className="text-base">
             Agriculture Equipment Booking System

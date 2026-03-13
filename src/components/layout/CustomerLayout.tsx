@@ -106,7 +106,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Email: support@agrirent.com</li>
+                <li>Email: support@aers.com</li>
                 <li>Phone: +255 700 000 000</li>
               </ul>
             </div>

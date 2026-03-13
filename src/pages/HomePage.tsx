@@ -143,9 +143,13 @@ export default function HomePage() {
                     <span className="font-semibold text-primary">${item.pricePerDay}/day</span>
                   </div>
                 </div>
-                <Button onClick={() => handleBookClick(item)} className="w-full h-11 gradient-primary text-white font-semibold">
+                <Button 
+                  onClick={() => handleBookClick(item)} 
+                  className="w-full h-11 gradient-primary text-white font-semibold"
+                  disabled={item.availability !== 'available'}
+                >
                   <Calendar className="w-4 h-4 mr-2" />
-                  Book Now
+                  {item.availability === 'available' ? 'Book Now' : 'Unavailable'}
                 </Button>
               </CardContent>
             </Card>
