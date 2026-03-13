@@ -123,7 +123,9 @@ export default function HomePage() {
               <div className="relative aspect-video overflow-hidden bg-muted">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute top-3 right-3">
-                  <Badge className="bg-success/90 text-white border-0">Available</Badge>
+                  <Badge className={item.availability === 'available' ? "bg-success/90 text-white border-0" : "bg-destructive/90 text-white border-0"}>
+                    {item.availability === 'available' ? 'Available' : 'Not Available'}
+                  </Badge>
                 </div>
               </div>
               <CardContent className="p-5 space-y-4">
@@ -141,9 +143,13 @@ export default function HomePage() {
                     <span className="font-semibold text-primary">${item.pricePerDay}/day</span>
                   </div>
                 </div>
-                <Button onClick={() => handleBookClick(item)} className="w-full h-11 gradient-primary text-white font-semibold">
+                <Button 
+                  onClick={() => handleBookClick(item)} 
+                  className="w-full h-11 gradient-primary text-white font-semibold"
+                  disabled={item.availability !== 'available'}
+                >
                   <Calendar className="w-4 h-4 mr-2" />
-                  Book Now
+                  {item.availability === 'available' ? 'Book Now' : 'Unavailable'}
                 </Button>
               </CardContent>
             </Card>

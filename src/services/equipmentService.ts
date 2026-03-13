@@ -75,6 +75,7 @@ export async function getEquipment(filters?: {
       description: eq.description || '',
       image: formatImagePath(eq.image || eq.imageUrl || ''),
       status: eq.status || 'available',
+      availability: eq.availability || 'available',
       createdAt: eq.createdAt || eq.created_at || '',
     }));
   }
@@ -98,6 +99,7 @@ export async function getEquipmentById(id: string): Promise<Equipment | null> {
       description: eq.description || '',
       image: formatImagePath(eq.image || eq.imageUrl || ''),
       status: eq.status || 'available',
+      availability: eq.availability || 'available',
       createdAt: eq.createdAt || eq.created_at || '',
     };
   }

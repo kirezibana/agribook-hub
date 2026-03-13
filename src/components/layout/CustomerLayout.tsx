@@ -34,7 +34,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  AgriRent
+                  AERS
                 </span>
                 <span className="text-xs text-muted-foreground">Customer Portal</span>
               </div>
@@ -98,7 +98,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold mb-4">AgriRent</h3>
+              <h3 className="font-semibold mb-4">AERS</h3>
               <p className="text-sm text-muted-foreground">
                 Professional agricultural equipment rental platform
               </p>
@@ -106,7 +106,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Email: support@agrirent.com</li>
+                <li>Email: support@aers.com</li>
                 <li>Phone: +255 700 000 000</li>
               </ul>
             </div>
