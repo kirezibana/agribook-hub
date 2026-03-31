@@ -16,6 +16,11 @@ import BookingsPage from "./pages/BookingsPage";
 import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
+import ManagerDashboardPage from "./pages/ManagerDashboardPage";
+import ManagerCategoriesPage from "./pages/ManagerCategoriesPage";
+import ManagerEquipmentPage from "./pages/ManagerEquipmentPage";
+import ManagerBookingsPage from "./pages/ManagerBookingsPage";
+import ManagerReportsPage from "./pages/ManagerReportsPage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +39,21 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Protected route for manager only
+function ManagerRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== "manager") {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 // Protected route for customers
 function CustomerRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
@@ -46,10 +66,14 @@ function CustomerRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  if (user?.role === "manager") {
+    return <Navigate to="/manager-dashboard" replace />;
+  }
+
   return <>{children}</>;
 }
 
-// Protected route for authenticated users (both admin and customer)
+// Protected route for authenticated users (both admin, manager, and customer)
 function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
 
@@ -72,6 +96,8 @@ function AppRoutes() {
           isAuthenticated ? (
             user?.role === "admin" ? (
               <Navigate to="/dashboard" replace />
+            ) : user?.role === "manager" ? (
+              <Navigate to="/manager-dashboard" replace />
             ) : (
               <Navigate to="/home" replace />
             )
@@ -151,6 +177,49 @@ function AppRoutes() {
           </AdminRoute>
         }
       />
+
+      {/* Manager Routes */}
+      <Route
+        path="/manager-dashboard"
+        element={
+          <ManagerRoute>
+            <ManagerDashboardPage />
+          </ManagerRoute>
+        }
+      />
+      <Route
+        path="/manager-categories"
+        element={
+          <ManagerRoute>
+            <ManagerCategoriesPage />
+          </ManagerRoute>
+        }
+      />
+      <Route
+        path="/manager-equipment"
+        element={
+          <ManagerRoute>
+            <ManagerEquipmentPage />
+          </ManagerRoute>
+        }
+      />
+      <Route
+        path="/manager-bookings"
+        element={
+          <ManagerRoute>
+            <ManagerBookingsPage />
+          </ManagerRoute>
+        }
+      />
+      <Route
+        path="/manager-reports"
+        element={
+          <ManagerRoute>
+            <ManagerReportsPage />
+          </ManagerRoute>
+        }
+      />
+
       <Route
         path="/profile"
         element={
