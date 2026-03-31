@@ -22,6 +22,8 @@ export default function RoleBasedLoginPage() {
   if (isAuthenticated) {
     if (user?.role === "admin") {
       return <Navigate to="/dashboard" replace />;
+    } else if (user?.role === "manager") {
+      return <Navigate to="/manager-dashboard" replace />;
     } else {
       return <Navigate to="/home" replace />;
     }
@@ -44,6 +46,12 @@ export default function RoleBasedLoginPage() {
             description: "You have successfully logged in to the admin panel.",
           });
           navigate("/dashboard");
+        } else if (storedUser?.role === "manager") {
+          toast({
+            title: "Welcome Manager!",
+            description: "You have successfully logged in to the manager portal.",
+          });
+          navigate("/manager-dashboard");
         } else {
           toast({
             title: "Welcome!",
