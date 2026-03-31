@@ -46,6 +46,12 @@ export default function RoleBasedLoginPage() {
             description: "You have successfully logged in to the admin panel.",
           });
           navigate("/dashboard");
+        } else if (storedUser?.role === "manager") {
+          toast({
+            title: "Welcome Manager!",
+            description: "You have successfully logged in to the manager portal.",
+          });
+          navigate("/manager-dashboard");
         } else {
           toast({
             title: "Welcome!",
