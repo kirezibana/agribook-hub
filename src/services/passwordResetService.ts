@@ -56,3 +56,23 @@ export async function updatePassword(email: string, newPassword: string): Promis
     return { status: 'error', message: error.message || 'Failed to reset password' };
   }
 }
+
+// Verify the OTP code that was saved in tbl_password_reset for this email
+export async function verifyResetCode(email: string, code: string): Promise<PasswordResetUpdateResponse> {
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('code', code);
+
+    const response = await fetch(`${API_BASE_URL}/verifyCode.php`, {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json();
+    console.log('Verify Code API Response:', result);
+    return result;
+  } catch (error: any) {
+    console.error('Verify Code API Error:', error);
+    return { status: 'error', message: error.message || 'Failed to verify code' };
+  }
+}
