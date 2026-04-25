@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tractor, Loader2, AlertCircle, ArrowLeft, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { requestPasswordReset, updatePassword } from "@/services/passwordResetService";
+import { requestPasswordReset, updatePassword, verifyResetCode } from "@/services/passwordResetService";
 
-type Step = "email" | "newPassword" | "done";
+type Step = "email" | "newPassword" | "verifyCode" | "done";
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<Step>("email");
@@ -16,6 +16,7 @@ export default function ForgotPasswordPage() {
   const [phone, setPhone] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [code, setCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function ForgotPasswordPage() {
         toast({
           title: "Email verified",
           description: res.data?.phone
-            ? `A reset code was generated for the phone associated with this email (${res.data.phone}).`
+            ? `A reset code was sent to phone ${res.data.phone}.`
             : "A reset code was generated.",
         });
         setStep("newPassword");
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleReset = async (e: React.FormEvent) => {
+  const handleProceedToCode = (e: React.FormEvent) => {
     e.preventDefault();
     setApiError(null);
 
@@ -59,9 +60,27 @@ export default function ForgotPasswordPage() {
       setApiError("Passwords do not match");
       return;
     }
+    setStep("verifyCode");
+  };
+
+  const handleVerifyAndReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setApiError(null);
+
+    if (!code.trim()) {
+      setApiError("Please enter the code");
+      return;
+    }
 
     setIsLoading(true);
     try {
+      const verify = await verifyResetCode(email.trim(), code.trim());
+      if (verify.status !== "success") {
+        setApiError(verify.message || "Invalid code");
+        setIsLoading(false);
+        return;
+      }
+
       const res = await updatePassword(email.trim(), newPassword);
       if (res.status === "success") {
         toast({ title: "Password updated", description: "You can now sign in with your new password." });
@@ -91,11 +110,13 @@ export default function ForgotPasswordPage() {
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {step === "email" && "Forgot Password"}
             {step === "newPassword" && "Set New Password"}
+            {step === "verifyCode" && "Verify Code"}
             {step === "done" && "Password Updated"}
           </CardTitle>
           <CardDescription className="text-base">
             {step === "email" && "Enter your email to start the reset process"}
             {step === "newPassword" && "Choose a new password for your account"}
+            {step === "verifyCode" && "Enter the code that was sent to your phone"}
             {step === "done" && "Your password has been changed successfully"}
           </CardDescription>
         </CardHeader>
@@ -133,10 +154,10 @@ export default function ForgotPasswordPage() {
           )}
 
           {step === "newPassword" && (
-            <form onSubmit={handleReset} className="space-y-5">
+            <form onSubmit={handleProceedToCode} className="space-y-5">
               {phone && (
                 <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
-                  Reset code generated for phone: <span className="font-semibold">{phone}</span>
+                  Reset code sent to phone: <span className="font-semibold">{phone}</span>
                 </div>
               )}
               <div className="space-y-2">
@@ -173,9 +194,47 @@ export default function ForgotPasswordPage() {
               <Button
                 type="submit"
                 className="w-full h-12 text-base font-semibold gradient-primary hover:opacity-90 shadow-lg"
+              >
+                Continue
+              </Button>
+            </form>
+          )}
+
+          {step === "verifyCode" && (
+            <form onSubmit={handleVerifyAndReset} className="space-y-5">
+              {phone && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                  Enter the 4-digit code sent to <span className="font-semibold">{phone}</span>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Verification Code</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="Enter code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="h-12 bg-muted/50 border-muted-foreground/20 focus:border-primary tracking-widest text-center text-lg"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold gradient-primary hover:opacity-90 shadow-lg"
                 disabled={isLoading}
               >
-                {isLoading ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Saving...</>) : "Save New Password"}
+                {isLoading ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verifying...</>) : "Verify & Update Password"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setStep("newPassword")}
+                disabled={isLoading}
+              >
+                Back
               </Button>
             </form>
           )}
