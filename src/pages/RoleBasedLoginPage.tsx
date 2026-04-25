@@ -166,6 +166,11 @@ export default function RoleBasedLoginPage() {
           </form>
 
           <div className="mt-6 space-y-3">
+            <p className="text-center text-sm">
+              <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => navigate("/forgot-password")}>
+                Forgot password?
+              </Button>
+            </p>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => navigate("/register")}>

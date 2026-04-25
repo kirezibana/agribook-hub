@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import RoleBasedLoginPage from "./pages/RoleBasedLoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ManageUsersPage from "./pages/ManageUsersPage";
 import HomePage from "./pages/HomePage";
 import MyBookingsPage from "./pages/MyBookingsPage";
@@ -108,6 +109,7 @@ function AppRoutes() {
       />
       <Route path="/login" element={<RoleBasedLoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/admin-login" element={<Navigate to="/login" replace />} />
 
       {/* Customer Routes */}
