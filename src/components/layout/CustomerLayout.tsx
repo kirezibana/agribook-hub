@@ -34,7 +34,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  EARMS
+                  AERMS
                 </span>
                 <span className="text-xs text-muted-foreground">Customer Portal</span>
               </div>
@@ -98,7 +98,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold mb-4">EARMS</h3>
+              <h3 className="font-semibold mb-4">AERMS</h3>
               <p className="text-sm text-muted-foreground">
                 Professional agricultural equipment rental platform
               </p>

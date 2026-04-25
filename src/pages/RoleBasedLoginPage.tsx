@@ -94,7 +94,7 @@ export default function RoleBasedLoginPage() {
             <Tractor className="w-9 h-9 text-primary-foreground" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            EARMS Login
+            AERMS Login
           </CardTitle>
           <CardDescription className="text-base">
             Agriculture Equipment Booking System
@@ -166,6 +166,11 @@ export default function RoleBasedLoginPage() {
           </form>
 
           <div className="mt-6 space-y-3">
+            <p className="text-center text-sm">
+              <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => navigate("/forgot-password")}>
+                Forgot password?
+              </Button>
+            </p>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => navigate("/register")}>

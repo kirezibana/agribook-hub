@@ -48,7 +48,7 @@ export function ManagerSidebar() {
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-bold text-lg text-sidebar-foreground">EARMS</h1>
+              <h1 className="font-bold text-lg text-sidebar-foreground">AERMS</h1>
               <p className="text-xs text-sidebar-foreground/70">Manager Portal</p>
             </div>
           )}
