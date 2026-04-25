@@ -192,6 +192,7 @@ export default function ManageUsersPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="customer">Customer</SelectItem>
                   </SelectContent>
                 </Select>
