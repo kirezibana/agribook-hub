@@ -22,8 +22,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      if (!user?.id) return;
       try {
-        const response = await getUserProfile();
+        const response = await getUserProfile(user.id);
         if (response.status === 'success' && response.data) {
           setFormData({
             name: response.data.name || "",
@@ -33,7 +34,7 @@ export default function ProfilePage() {
           });
           // Update the user context with fresh data
           if (user) {
-            updateUser({ ...user, ...response.data });
+            updateUser({ ...user, name: response.data.name, email: response.data.email, phone: response.data.phone, address: response.data.address });
           }
         }
       } catch (error) {
