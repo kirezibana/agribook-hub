@@ -69,11 +69,12 @@ export default function ProfilePage() {
     setLoading(true);
 
     try {
-      const response = await updateUserProfile(formData);
+      if (!user?.id) throw new Error("Not authenticated");
+      const response = await updateUserProfile({ id: user.id, ...formData });
       
-      if (response.status === 'success' && response.data) {
+      if (response.status === 'success') {
         // Update the user context with new data
-        updateUser(response.data);
+        updateUser({ ...user, ...formData });
         
         toast({
           title: "Success",
