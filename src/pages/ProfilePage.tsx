@@ -22,8 +22,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      if (!user?.id) return;
       try {
-        const response = await getUserProfile();
+        const response = await getUserProfile(user.id);
         if (response.status === 'success' && response.data) {
           setFormData({
             name: response.data.name || "",
@@ -33,7 +34,7 @@ export default function ProfilePage() {
           });
           // Update the user context with fresh data
           if (user) {
-            updateUser({ ...user, ...response.data });
+            updateUser({ ...user, name: response.data.name, email: response.data.email, phone: response.data.phone, address: response.data.address });
           }
         }
       } catch (error) {
@@ -68,11 +69,12 @@ export default function ProfilePage() {
     setLoading(true);
 
     try {
-      const response = await updateUserProfile(formData);
+      if (!user?.id) throw new Error("Not authenticated");
+      const response = await updateUserProfile({ id: user.id, ...formData });
       
-      if (response.status === 'success' && response.data) {
+      if (response.status === 'success') {
         // Update the user context with new data
-        updateUser(response.data);
+        updateUser({ ...user, ...formData });
         
         toast({
           title: "Success",

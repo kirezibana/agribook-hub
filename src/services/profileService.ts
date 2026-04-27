@@ -1,6 +1,7 @@
 import fetchApi, { ApiResponse } from './apiClient';
 
 interface UserProfile {
+  id?: number | string;
   name: string;
   email: string;
   phone: string;
@@ -8,6 +9,7 @@ interface UserProfile {
 }
 
 interface UpdateProfileRequest {
+  id: number | string;
   name: string;
   email: string;
   phone: string;
@@ -18,20 +20,23 @@ export const updateUserProfile = async (
   profileData: UpdateProfileRequest
 ): Promise<ApiResponse<UserProfile>> => {
   const formData = new FormData();
+  formData.append('id', String(profileData.id));
   formData.append('name', profileData.name);
   formData.append('email', profileData.email);
   formData.append('phone', profileData.phone);
   formData.append('address', profileData.address);
 
-  // Since the API might return user data in the response, we'll handle it as UserProfile
   return fetchApi<UserProfile>('update_profile.php', {
     method: 'POST',
     body: formData,
+    headers: {}, // let browser set multipart boundary
   });
 };
 
-export const getUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
-  return fetchApi<UserProfile>('get_profile.php', {
+export const getUserProfile = async (
+  id: number | string
+): Promise<ApiResponse<UserProfile>> => {
+  return fetchApi<UserProfile>(`get_profile.php?id=${encodeURIComponent(String(id))}`, {
     method: 'GET',
   });
 };
