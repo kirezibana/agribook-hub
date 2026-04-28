@@ -129,6 +129,36 @@ export default function ReportsPage() {
     setStatusFilter("all");
   };
 
+  const handleExport = () => {
+    const rows = filteredBookings.map((b) => ({
+      ID: b.id,
+      Customer: b.customerName,
+      Phone: b.customerPhone,
+      Email: b.customerEmail,
+      Equipment: b.equipmentName,
+      Category: b.categoryName,
+      "Start Date": b.startDate,
+      "End Date": b.endDate,
+      Days: b.totalDays,
+      "Total Amount ($)": Number(b.totalPrice ?? 0),
+      Status: b.status,
+    }));
+
+    const summary = [
+      { Metric: "Total Revenue ($)", Value: stats.totalRevenue },
+      { Metric: "Total Bookings", Value: stats.totalBookings },
+      { Metric: "Avg. Booking Value ($)", Value: Number(stats.avgBookingValue.toFixed(2)) },
+      { Metric: "Total Rental Days", Value: stats.totalDays },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Bookings");
+
+    const stamp = format(new Date(), "yyyyMMdd_HHmm");
+    XLSX.writeFile(wb, `EARMS_Report_${stamp}.xlsx`);
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending: "bg-warning/10 text-warning",
