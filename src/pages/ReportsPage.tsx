@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { getBookings } from "@/services/bookingsService";
 import { getCategories } from "@/services/categoriesService";
 import { Booking, Category } from "@/data/mockData";
+import * as XLSX from "xlsx";
 
 export default function ReportsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
