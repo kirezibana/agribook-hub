@@ -1,5 +1,4 @@
-import { Bell, Search, User } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -34,14 +33,6 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-10 w-64 bg-muted/50 border-0 focus-visible:ring-primary"
-            />
-          </div>
 
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">

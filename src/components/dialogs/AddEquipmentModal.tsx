@@ -125,7 +125,7 @@ export default function AddEquipmentModal({ open, onOpenChange, categories, onCr
         <Button className="gradient-primary" onClick={() => onOpenChange(true)}>Add Equipment</Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit} onKeyDown={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Add New Equipment</DialogTitle>
@@ -217,7 +217,7 @@ export default function AddEquipmentModal({ open, onOpenChange, categories, onCr
                           Remove
                         </Button>
                       </div>
-                      <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
+                      <div className="relative bg-muted rounded-md overflow-hidden h-40">
                         <img
                           src={previewUrl}
                           alt="Preview"

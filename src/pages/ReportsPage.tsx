@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { getBookings } from "@/services/bookingsService";
 import { getCategories } from "@/services/categoriesService";
 import { Booking, Category } from "@/data/mockData";
+import * as XLSX from "xlsx";
 
 export default function ReportsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -126,6 +127,36 @@ export default function ReportsPage() {
     setCategoryFilter("all");
     setEquipmentFilter("all");
     setStatusFilter("all");
+  };
+
+  const handleExport = () => {
+    const rows = filteredBookings.map((b) => ({
+      ID: b.id,
+      Customer: b.customerName,
+      Phone: b.customerPhone,
+      Email: b.customerEmail,
+      Equipment: b.equipmentName,
+      Category: b.categoryName,
+      "Start Date": b.startDate,
+      "End Date": b.endDate,
+      Days: b.totalDays,
+      "Total Amount ($)": Number(b.totalPrice ?? 0),
+      Status: b.status,
+    }));
+
+    const summary = [
+      { Metric: "Total Revenue ($)", Value: stats.totalRevenue },
+      { Metric: "Total Bookings", Value: stats.totalBookings },
+      { Metric: "Avg. Booking Value ($)", Value: Number(stats.avgBookingValue.toFixed(2)) },
+      { Metric: "Total Rental Days", Value: stats.totalDays },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Bookings");
+
+    const stamp = format(new Date(), "yyyyMMdd_HHmm");
+    XLSX.writeFile(wb, `EARMS_Report_${stamp}.xlsx`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -239,7 +270,7 @@ export default function ReportsPage() {
             </div>
 
             <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-            <Button className="gradient-primary">
+            <Button className="gradient-primary" onClick={handleExport} disabled={filteredBookings.length === 0}>
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>

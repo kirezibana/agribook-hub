@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -17,6 +18,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const COLORS = ["hsl(199, 89%, 48%)", "hsl(142, 76%, 36%)", "hsl(38, 92%, 50%)", "hsl(280, 65%, 60%)", "hsl(0, 84%, 60%)"];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<any[]>([]);
@@ -42,6 +44,7 @@ export default function DashboardPage() {
           icon: FolderOpen,
           color: "bg-primary",
           change: `${data.totalCategories} categories`,
+          route: "/categories",
         },
         {
           name: "Total Equipment",
@@ -49,6 +52,7 @@ export default function DashboardPage() {
           icon: Wrench,
           color: "bg-success",
           change: `${data.availableEquipment} available`,
+          route: "/equipment",
         },
         {
           name: "Active Bookings",
@@ -56,6 +60,7 @@ export default function DashboardPage() {
           icon: CalendarCheck,
           color: "bg-warning",
           change: `${data.pendingBookings} pending`,
+          route: "/bookings",
         },
         {
           name: "Total Revenue",
@@ -63,6 +68,7 @@ export default function DashboardPage() {
           icon: DollarSign,
           color: "bg-chart-4",
           change: `${data.totalCustomers} customers`,
+          route: "/reports",
         },
       ];
 
@@ -114,7 +120,19 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <Card key={stat.name} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <Card
+            key={stat.name}
+            onClick={() => stat.route && navigate(stat.route)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && stat.route) {
+                e.preventDefault();
+                navigate(stat.route);
+              }
+            }}
+            className="border-0 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
