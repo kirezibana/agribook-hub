@@ -164,7 +164,7 @@ export default function MyBookingsPage() {
                     <TableCell>
                       <p className="font-semibold">{booking.equipmentName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {booking.equipment}
+                        {booking.categoryName}
                       </p>
                     </TableCell>
                     <TableCell className="text-sm">
