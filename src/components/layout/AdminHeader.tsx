@@ -1,5 +1,4 @@
-import { Bell, Search, User } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
