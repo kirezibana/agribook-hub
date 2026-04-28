@@ -44,6 +44,7 @@ export default function DashboardPage() {
           icon: FolderOpen,
           color: "bg-primary",
           change: `${data.totalCategories} categories`,
+          route: "/categories",
         },
         {
           name: "Total Equipment",
@@ -51,6 +52,7 @@ export default function DashboardPage() {
           icon: Wrench,
           color: "bg-success",
           change: `${data.availableEquipment} available`,
+          route: "/equipment",
         },
         {
           name: "Active Bookings",
@@ -58,6 +60,7 @@ export default function DashboardPage() {
           icon: CalendarCheck,
           color: "bg-warning",
           change: `${data.pendingBookings} pending`,
+          route: "/bookings",
         },
         {
           name: "Total Revenue",
@@ -65,6 +68,7 @@ export default function DashboardPage() {
           icon: DollarSign,
           color: "bg-chart-4",
           change: `${data.totalCustomers} customers`,
+          route: "/reports",
         },
       ];
 
