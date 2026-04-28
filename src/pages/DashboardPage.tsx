@@ -120,7 +120,19 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <Card key={stat.name} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <Card
+            key={stat.name}
+            onClick={() => stat.route && navigate(stat.route)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && stat.route) {
+                e.preventDefault();
+                navigate(stat.route);
+              }
+            }}
+            className="border-0 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
