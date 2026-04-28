@@ -270,7 +270,7 @@ export default function ReportsPage() {
             </div>
 
             <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-            <Button className="gradient-primary">
+            <Button className="gradient-primary" onClick={handleExport} disabled={filteredBookings.length === 0}>
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>
