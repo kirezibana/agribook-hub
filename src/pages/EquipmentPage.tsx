@@ -136,7 +136,11 @@ export default function EquipmentPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEquipment(id);
+      const res = await deleteEquipment(id);
+      if (res.status !== 'success') {
+        toast({ title: "Error", description: res.message || "Failed to delete equipment", variant: "destructive" });
+        return;
+      }
       await fetchData();
       toast({ title: "Deleted", description: "Equipment removed successfully" });
     } catch (err) {

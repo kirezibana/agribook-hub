@@ -148,8 +148,16 @@ export async function updateEquipment(id: string, data: Partial<EquipmentInput>,
 
 // Delete equipment
 export async function deleteEquipment(id: string): Promise<ApiResponse<any>> {
-  return fetchApi('equipment.php?action=delete', {
-    method: 'POST',
-    body: JSON.stringify({ id: parseInt(id) }),
-  });
+  const formData = new FormData();
+  formData.append('id', id);
+  try {
+    const response = await fetch(`${API_BASE_URL}/equipment.php?action=delete`, {
+      method: 'POST',
+      body: formData,
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    return { status: 'error', message: 'Failed to delete equipment.' };
+  }
 }
