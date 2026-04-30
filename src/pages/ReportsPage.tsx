@@ -140,14 +140,14 @@ export default function ReportsPage() {
       "Start Date": b.startDate,
       "End Date": b.endDate,
       Days: b.totalDays,
-      "Total Amount ($)": Number(b.totalPrice ?? 0),
+      "Total Amount (RWF)": Number(b.totalPrice ?? 0),
       Status: b.status,
     }));
 
     const summary = [
-      { Metric: "Total Revenue ($)", Value: stats.totalRevenue },
+      { Metric: "Total Revenue (RWF)", Value: stats.totalRevenue },
       { Metric: "Total Bookings", Value: stats.totalBookings },
-      { Metric: "Avg. Booking Value ($)", Value: Number(stats.avgBookingValue.toFixed(2)) },
+      { Metric: "Avg. Booking Value (RWF)", Value: Math.round(stats.avgBookingValue) },
       { Metric: "Total Rental Days", Value: stats.totalDays },
     ];
 
@@ -288,7 +288,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">RWF {stats.totalRevenue.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -314,7 +314,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Booking Value</p>
-                <p className="text-2xl font-bold">${stats.avgBookingValue.toFixed(0)}</p>
+                <p className="text-2xl font-bold">RWF {Math.round(stats.avgBookingValue).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -417,7 +417,7 @@ export default function ReportsPage() {
                   <TableCell>{booking.categoryName}</TableCell>
                   <TableCell className="text-sm">{booking.startDate} → {booking.endDate}</TableCell>
                   <TableCell>{booking.totalDays}</TableCell>
-                  <TableCell className="font-bold text-primary">${booking.totalPrice}</TableCell>
+                  <TableCell className="font-bold text-primary">RWF {Number(booking.totalPrice ?? 0).toLocaleString()}</TableCell>
                   <TableCell>{getStatusBadge(booking.status)}</TableCell>
                 </TableRow>
               ))}

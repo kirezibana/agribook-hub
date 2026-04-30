@@ -262,7 +262,7 @@ export default function ManagerBookingsPage() {
                     <span className="font-medium">{booking.totalDays ?? 0} days</span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-bold text-primary">${booking.totalPrice !== undefined && booking.totalPrice !== null ? booking.totalPrice : '0.00'}</span>
+                      <span className="font-bold text-primary">RWF {Number(booking.totalPrice ?? 0).toLocaleString()}</span>
                   </TableCell>
                   <TableCell>{getStatusBadge(booking.status)}</TableCell>
                   <TableCell className="text-right">
@@ -311,7 +311,7 @@ export default function ManagerBookingsPage() {
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Total Price</Label>
-                                <p className="font-semibold text-primary">${booking.totalPrice !== undefined && booking.totalPrice !== null ? booking.totalPrice : '0.00'}</p>
+                                <p className="font-semibold text-primary">RWF {Number(booking.totalPrice ?? 0).toLocaleString()}</p>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-muted-foreground">Status</Label>
