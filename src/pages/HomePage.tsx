@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, Search, DollarSign, MapPin, Calendar, Loader2 } from "lucide-react";
+import { AlertCircle, Search, MapPin, Calendar, Loader2 } from "lucide-react";
 import { Equipment } from "@/data/mockData";
 import { getEquipment } from "@/services/equipmentService";
 import { getCategories } from "@/services/categoriesService";
@@ -137,7 +137,6 @@ export default function HomePage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="w-4 h-4" />
                       <span>Price</span>
                     </div>
                     <span className="font-semibold text-primary">RWF {Number(item.pricePerDay ?? 0).toLocaleString()}/day</span>
