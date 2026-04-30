@@ -257,7 +257,7 @@ export default function ManagerReportsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">RWF {stats.totalRevenue.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -283,7 +283,7 @@ export default function ManagerReportsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Booking Value</p>
-                <p className="text-2xl font-bold">${stats.avgBookingValue.toFixed(0)}</p>
+                <p className="text-2xl font-bold">RWF {Math.round(stats.avgBookingValue).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -386,7 +386,7 @@ export default function ManagerReportsPage() {
                   <TableCell>{booking.categoryName}</TableCell>
                   <TableCell className="text-sm">{booking.startDate} → {booking.endDate}</TableCell>
                   <TableCell>{booking.totalDays}</TableCell>
-                  <TableCell className="font-bold text-primary">${booking.totalPrice}</TableCell>
+                  <TableCell className="font-bold text-primary">RWF {Number(booking.totalPrice ?? 0).toLocaleString()}</TableCell>
                   <TableCell>{getStatusBadge(booking.status)}</TableCell>
                 </TableRow>
               ))}

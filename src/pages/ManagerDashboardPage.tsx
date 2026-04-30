@@ -59,7 +59,7 @@ export default function ManagerDashboardPage() {
         },
         {
           name: "Total Revenue",
-          value: `$${Math.round(data.totalRevenue).toLocaleString()}`,
+          value: `RWF ${Math.round(data.totalRevenue).toLocaleString()}`,
           icon: DollarSign,
           color: "bg-chart-4",
           change: `${data.totalCustomers} customers`,

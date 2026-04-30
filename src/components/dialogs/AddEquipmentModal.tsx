@@ -158,12 +158,12 @@ export default function AddEquipmentModal({ open, onOpenChange, categories, onCr
             </div>
 
             <div className="space-y-2">
-              <Label>Hourly Rate ($)</Label>
+              <Label>Hourly Rate (RWF)</Label>
               <Input type="number" value={form.hourly_rate} onChange={(e) => handleChange('hourly_rate', e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
             </div>
 
             <div className="space-y-2">
-              <Label>Daily Rate ($) *</Label>
+              <Label>Daily Rate (RWF) *</Label>
               <Input required type="number" value={form.daily_rate} onChange={(e) => handleChange('daily_rate', e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
             </div>
 

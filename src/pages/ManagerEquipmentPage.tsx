@@ -195,7 +195,7 @@ export default function ManagerEquipmentPage() {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Daily Rate ($) *</Label>
+        <Label>Daily Rate (RWF) *</Label>
         <Input type="number" placeholder="Enter daily rate" value={formData.daily_rate} onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
       </div>
       <div className="space-y-2">
