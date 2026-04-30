@@ -183,7 +183,7 @@ export default function MyBookingsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="font-bold text-primary">
-                        ${Number(booking.totalPrice ?? 0).toFixed(2)}
+                        RWF {Number(booking.totalPrice ?? 0).toLocaleString()}
                       </span>
                     </TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>

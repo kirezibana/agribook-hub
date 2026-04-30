@@ -140,7 +140,7 @@ export default function HomePage() {
                       <DollarSign className="w-4 h-4" />
                       <span>Price</span>
                     </div>
-                    <span className="font-semibold text-primary">${item.pricePerDay}/day</span>
+                    <span className="font-semibold text-primary">RWF {Number(item.pricePerDay ?? 0).toLocaleString()}/day</span>
                   </div>
                 </div>
                 <Button 

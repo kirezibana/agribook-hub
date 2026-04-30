@@ -74,7 +74,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
       });
 
       if (response.status === "success") {
-        toast({ title: "Booking Submitted! 🎉", description: `Equipment booked for ${getDays()} day(s). Total: $${totalCost.toFixed(2)}. Payment via ${paymentNetwork.toUpperCase()}.` });
+        toast({ title: "Booking Submitted! 🎉", description: `Equipment booked for ${getDays()} day(s). Total: RWF ${Number(totalCost).toLocaleString()}. Payment via ${paymentNetwork.toUpperCase()}.` });
         resetForm();
         onOpenChange(false);
         onSuccess?.();
@@ -110,7 +110,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
         <div className="bg-muted/50 p-4 rounded-lg space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Daily Rate:</span>
-            <span className="font-semibold">${equipment.pricePerDay}/day</span>
+            <span className="font-semibold">RWF {Number(equipment.pricePerDay ?? 0).toLocaleString()}/day</span>
           </div>
           {getDays() > 0 && (
             <>
@@ -120,7 +120,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
               </div>
               <div className="border-t pt-2 flex justify-between">
                 <span className="text-sm font-medium">Total:</span>
-                <span className="font-bold text-primary">${totalCost.toFixed(2)}</span>
+                <span className="font-bold text-primary">RWF {Number(totalCost).toLocaleString()}</span>
               </div>
             </>
           )}
@@ -221,7 +221,7 @@ export function BookingModal({ equipment, open, onOpenChange, onSuccess }: Booki
               </Button>
               <Button onClick={handleBook} className="gradient-primary" disabled={isLoading || !paymentPhone.trim()}>
                 {isLoading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>) : (
-                  <><Calendar className="w-4 h-4 mr-2" />Pay & Book - ${totalCost > 0 ? totalCost.toFixed(2) : '0.00'}</>
+                  <><Calendar className="w-4 h-4 mr-2" />Pay & Book - RWF {Number(totalCost > 0 ? totalCost : 0).toLocaleString()}</>
                 )}
               </Button>
             </>
