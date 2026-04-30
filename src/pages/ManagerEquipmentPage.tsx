@@ -306,8 +306,7 @@ export default function ManagerEquipmentPage() {
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{eq.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-primary font-bold text-lg">
-                      <DollarSign className="w-5 h-5" />
-                      {eq.pricePerDay}/day
+                      <span>RWF {Number(eq.pricePerDay ?? 0).toLocaleString()}/day</span>
                     </div>
                     <div className="flex gap-1">
                       <Dialog open={editingEquipment?.id === eq.id} onOpenChange={(open) => !open && setEditingEquipment(null)}>
