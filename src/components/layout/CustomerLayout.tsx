@@ -36,7 +36,7 @@ export function CustomerLayout({ children, title, subtitle }: CustomerLayoutProp
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   AERMS
                 </span>
-                <span className="text-xs text-muted-foreground">Customer Portal</span>
+                <span className="text-xs text-muted-foreground">Farmers Portal</span>
               </div>
             </div>
 
